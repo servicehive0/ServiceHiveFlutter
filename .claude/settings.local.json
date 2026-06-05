@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//e/Shayan/SERVICE-HIVE/Service-Hive-Mern/Backend/models/**)",
+      "PowerShell(npm install -g @railway/cli 2>&1)",
+      "PowerShell(railway --version 2>&1)",
+      "PowerShell(winget install Git.Git --silent --accept-source-agreements --accept-package-agreements 2>&1)",
+      "Read(//e/Shayan/SERVICE-HIVE/Service-Hive-Mern/Frontend/src/context/**)",
+      "PowerShell(Start-Process \"ms-settings:developers\")"
+    ]
+  }
+}
