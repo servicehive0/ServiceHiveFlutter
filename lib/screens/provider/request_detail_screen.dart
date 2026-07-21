@@ -81,10 +81,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                         style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 20))),
                     ),
                     const SizedBox(width: 14),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-                      Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12)),
-                    ]),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ]),
+                    ),
                   ]),
                 ]),
               ),

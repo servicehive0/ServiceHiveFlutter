@@ -60,12 +60,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   void _navigate() {
     if (!mounted) return;
+    // Router's own redirect (see router.dart) handles maintenance-mode
+    // takeover, so this just picks the normal destination.
     final auth = context.read<AuthProvider>();
-    if (auth.isAuthenticated) {
-      context.go('/dashboard');
-    } else {
-      context.go('/auth');
-    }
+    context.go(auth.isAuthenticated ? '/dashboard' : '/auth');
   }
 
   @override

@@ -115,11 +115,12 @@ class JobDetailScreen extends StatelessWidget {
                         style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 18))),
                     ),
                     const SizedBox(width: 12),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                      Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12)),
-                    ]),
-                    const Spacer(),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ]),
+                    ),
                     GestureDetector(
                       onTap: () => context.push('/chat/${booking.id}'),
                       child: Container(

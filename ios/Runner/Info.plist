@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>ServiceHive needs camera access to take photos of your CNIC and selfie for identity verification.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ServiceHive needs photo library access to upload your CNIC, selfie, and work documents.</string>
 </dict>
 </plist>

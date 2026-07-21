@@ -68,9 +68,11 @@ class BookingDetailScreen extends StatelessWidget {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(booking.status.label,
-                          style: GoogleFonts.inter(color: booking.status.color, fontSize: 16, fontWeight: FontWeight.w800)),
+                          style: GoogleFonts.inter(color: booking.status.color, fontSize: 16, fontWeight: FontWeight.w800),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text(booking.serviceType,
-                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text('#${booking.id}',
                           style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11)),
                       ]),
@@ -104,7 +106,7 @@ class BookingDetailScreen extends StatelessWidget {
           ]),
 
           _InfoCard(title: 'Description', children: [
-            Text(booking.description, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, height: 1.6)),
+            Text(booking.description, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, height: 1.6), maxLines: 3, overflow: TextOverflow.ellipsis),
           ]),
 
           if (booking.rating != null)

@@ -1,14 +1,106 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/app_logo.dart';
+import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
 import 'contact_us_screen.dart';
+import 'help_support_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _uploadingAvatar = false;
+  String? _specialization;
+  int? _rateHr;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = context.read<AuthProvider>().user;
+      if (user?.role != 'provider') return;
+      final data = await Supabase.instance.client
+          .from('provider_profiles')
+          .select('service_type, rate_per_hour')
+          .eq('id', user!.id)
+          .maybeSingle();
+      final type = data?['service_type'] as String?;
+      final rate = (data?['rate_per_hour'] as num?)?.toInt();
+      if (mounted) {
+        setState(() {
+          if (type != null && type.isNotEmpty) _specialization = type;
+          _rateHr = rate;
+        });
+      }
+    });
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 8),
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+            title: Text('Take Photo', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+            title: Text('Choose from Gallery', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final picked = await ImagePicker().pickImage(source: source, imageQuality: 85, maxWidth: 800);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+
+      setState(() => _uploadingAvatar = true);
+      final ok = await context.read<AuthProvider>().uploadAvatar(bytes, picked.name);
+      if (!mounted) return;
+      setState(() => _uploadingAvatar = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok ? 'Profile picture updated!' : 'Failed to upload. Try again.', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        backgroundColor: ok ? AppColors.success : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _uploadingAvatar = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not access camera/gallery. Check app permissions.', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
     final user = auth.user;
     final isProvider = user?.role == 'provider';
     final initials = user?.name.isNotEmpty == true
-        ? user!.name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+        ? user!.name.trim().split(' ').where((w) => w.isNotEmpty).map((w) => w[0]).take(2).join().toUpperCase()
         : '?';
 
     return Scaffold(
@@ -54,17 +146,32 @@ class ProfileScreen extends StatelessWidget {
                           width: 72, height: 72,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+                            gradient: user?.avatarUrl == null
+                                ? const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark])
+                                : null,
+                            image: user?.avatarUrl != null
+                                ? DecorationImage(image: CachedNetworkImageProvider(user!.avatarUrl!), fit: BoxFit.cover)
+                                : null,
                             boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 20)],
                           ),
-                          child: Center(
-                            child: Text(initials, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 26)),
-                          ),
+                          child: user?.avatarUrl == null
+                              ? Center(
+                                  child: Text(initials, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 26)),
+                                )
+                              : null,
                         ),
+                        if (_uploadingAvatar)
+                          Container(
+                            width: 72, height: 72,
+                            decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                            child: const Center(
+                              child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                            ),
+                          ),
                         Positioned(
                           bottom: 0, right: 0,
                           child: GestureDetector(
-                            onTap: () {},
+                            onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
                             child: Container(
                               width: 22, height: 22,
                               decoration: BoxDecoration(
@@ -88,22 +195,46 @@ class ProfileScreen extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(user?.email ?? '',
                             style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12),
-                            overflow: TextOverflow.ellipsis),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
                           if (user != null && user.phone.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text(user!.phone, style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 12)),
                           ],
                           const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(100),
-                              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                          Wrap(spacing: 6, runSpacing: 6, children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(100),
+                                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                              ),
+                              child: Text(isProvider ? 'Service Provider' : 'Customer',
+                                style: GoogleFonts.inter(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
                             ),
-                            child: Text(isProvider ? 'Service Provider' : 'Customer',
-                              style: GoogleFonts.inter(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
-                          ),
+                            if (isProvider && _specialization != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(100),
+                                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                                ),
+                                child: Text(_specialization!,
+                                  style: GoogleFonts.inter(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w700)),
+                              ),
+                            if (isProvider && _rateHr != null && _rateHr! > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFBBF24).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(100),
+                                  border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.3)),
+                                ),
+                                child: Text('Rs $_rateHr/hr',
+                                  style: GoogleFonts.inter(color: const Color(0xFFFBBF24), fontSize: 10, fontWeight: FontWeight.w700)),
+                              ),
+                          ]),
                         ],
                       ),
                     ),
@@ -128,10 +259,10 @@ class ProfileScreen extends StatelessWidget {
                   onTap: () => context.push('/notifications')),
                 _MenuItem(icon: Icons.security_rounded, label: 'Security',
                   subtitle: 'Password & account safety',
-                  onTap: () => _showComingSoon(context, 'Security')),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordScreen()))),
                 _MenuItem(icon: Icons.help_outline_rounded, label: 'Help & Support',
-                  subtitle: 'FAQs and guides',
-                  onTap: () => _showComingSoon(context, 'Help & Support')),
+                  subtitle: 'Frequently asked questions',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()))),
                 _MenuItem(icon: Icons.headset_mic_outlined, label: 'Contact Us',
                   subtitle: 'Send a complaint or message',
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactUsScreen()))),
@@ -191,22 +322,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showComingSoon(BuildContext context, String title) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('$title — Coming Soon', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-      backgroundColor: AppColors.surface2,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
-  }
-
   void _showAbout(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('ServiceHive', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900)),
+        title: const AppLogo(fontSize: 18, iconSize: 22),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('Version 1.0.0', style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),

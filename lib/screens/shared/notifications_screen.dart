@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/notification_model.dart';
-import '../../providers/booking_provider.dart';
+import '../../providers/notifications_provider.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -18,8 +18,8 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bp = context.watch<BookingProvider>();
-    final notifs = bp.notifications;
+    final np = context.watch<NotificationsProvider>();
+    final notifs = np.items;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -41,14 +41,16 @@ class NotificationsScreen extends StatelessWidget {
                 Expanded(child: Text('Notifications', style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700))),
                 if (notifs.any((n) => !n.isRead))
                   GestureDetector(
-                    onTap: () => bp.markNotifsRead(),
+                    onTap: () => np.markAllRead(),
                     child: Text('Mark all read', style: GoogleFonts.inter(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
           ),
           Expanded(
-            child: notifs.isEmpty
+            child: np.loading && notifs.isEmpty
+                ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                : notifs.isEmpty
                 ? Center(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Icons.notifications_none_rounded, color: AppColors.textDim, size: 52),
@@ -104,12 +106,12 @@ class _NotifTile extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Expanded(child: Text(notif.title, style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700))),
+            Expanded(child: Text(notif.title, style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis)),
             if (!notif.isRead)
               Container(width: 6, height: 6, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primary)),
           ]),
           const SizedBox(height: 4),
-          Text(notif.body, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
+          Text(notif.body, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 6),
           Text(timeAgo, style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 10)),
         ])),

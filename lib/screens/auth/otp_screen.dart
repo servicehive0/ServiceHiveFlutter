@@ -52,9 +52,27 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
     }
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.verifyOtp(_otp);
+    final success = await auth.verifyOtp(_otp, email: widget.email);
     if (success && mounted) {
-      context.go('/dashboard');
+      if (auth.lastProviderProfileError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            'Account created, but saving your provider details failed:\n${auth.lastProviderProfileError}',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 10),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+        await Future.delayed(const Duration(seconds: 3));
+      }
+      if (!mounted) return;
+      if (auth.needsAdminApproval) {
+        context.go('/pending-approval');
+      } else {
+        context.go('/dashboard');
+      }
     }
   }
 
@@ -63,10 +81,14 @@ class _OtpScreenState extends State<OtpScreen> with TickerProviderStateMixin {
     final auth = context.watch<AuthProvider>();
     final isLoading = auth.status == AuthStatus.loading;
 
+    // Card has 24px screen padding + 28px internal padding on each side, so
+    // available width for the 6 pin boxes is narrower than the full screen —
+    // account for that instead of a fixed size that overflowed on smaller phones.
+    final pinBoxSize = ((MediaQuery.of(context).size.width - 24 * 2 - 28 * 2 - 5 * 8) / 6).clamp(38.0, 52.0);
     final defaultPinTheme = PinTheme(
-      width: 52,
-      height: 58,
-      textStyle: GoogleFonts.inter(color: AppColors.primary, fontSize: 24, fontWeight: FontWeight.w900),
+      width: pinBoxSize,
+      height: pinBoxSize * 58 / 52,
+      textStyle: GoogleFonts.inter(color: AppColors.primary, fontSize: pinBoxSize * 24 / 52, fontWeight: FontWeight.w900),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.03),
         borderRadius: BorderRadius.circular(14),

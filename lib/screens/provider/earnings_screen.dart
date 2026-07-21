@@ -23,8 +23,15 @@ class EarningsScreen extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 56, 24, 20),
-              child: Text('Earnings', style: GoogleFonts.inter(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+              padding: const EdgeInsets.fromLTRB(16, 56, 24, 20),
+              child: Row(children: [
+                IconButton(
+                  onPressed: () => Navigator.maybePop(context),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 4),
+                Text('Earnings', style: GoogleFonts.inter(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+              ]),
             ),
           ),
 
@@ -132,8 +139,8 @@ class _TransactionTile extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(booking.serviceType, style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-          Text(booking.customerName, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 11)),
+          Text(booking.serviceType, style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(booking.customerName, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text('+ Rs ${(booking.agreedPrice ?? booking.offeredPrice ?? 0).toInt()}',

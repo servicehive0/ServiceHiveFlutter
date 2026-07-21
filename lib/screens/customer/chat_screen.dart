@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
-import '../../models/message_model.dart';
+import '../../models/bid_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../services/avatar_cache.dart';
 
 class ChatScreen extends StatefulWidget {
   final String bookingId;
@@ -17,34 +20,78 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _ctrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  bool _sending = false;
+  String? _otherAvatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<BookingProvider>().subscribeToChat(widget.bookingId);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOtherAvatar());
+  }
+
+  Future<void> _loadOtherAvatar() async {
+    try {
+      final userId = context.read<AuthProvider>().user?.id ?? '';
+      final booking = context.read<BookingProvider>().getById(widget.bookingId);
+      if (booking == null) return;
+      final isCustomer = booking.customerId == userId;
+      final otherId = isCustomer ? booking.providerId : booking.customerId;
+      final url = await AvatarCache.getAvatar(otherId);
+      if (mounted && url != null) {
+        setState(() => _otherAvatarUrl = url);
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
     _ctrl.dispose();
     _scrollCtrl.dispose();
+    context.read<BookingProvider>().unsubscribeFromChat();
     super.dispose();
   }
 
-  void _send() {
-    final text = _ctrl.text.trim();
-    if (text.isEmpty) return;
-    context.read<BookingProvider>().sendMessage(widget.bookingId, 'me', text);
-    _ctrl.clear();
-    Future.delayed(const Duration(milliseconds: 100), () {
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
-        _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
+  }
+
+  Future<void> _send() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty || _sending) return;
+
+    final user = context.read<AuthProvider>().user;
+    if (user == null) return;
+
+    setState(() => _sending = true);
+    _ctrl.clear();
+
+    final ok = await context.read<BookingProvider>().sendMessage(widget.bookingId, user.id, text);
+
+    if (mounted) {
+      setState(() => _sending = false);
+      if (ok) _scrollToBottom();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bp = context.watch<BookingProvider>();
     final booking = bp.getById(widget.bookingId);
-    final messages = bp.getChat(widget.bookingId);
-    final isCustomer = booking?.customerId == 'me';
+    final messages = bp.chatMessages;
+    final userId = context.read<AuthProvider>().user?.id ?? '';
+    final isCustomer = booking?.customerId == userId;
     final otherName = isCustomer ? (booking?.providerName ?? 'Provider') : (booking?.customerName ?? 'Customer');
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -73,9 +120,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+                    image: (_otherAvatarUrl != null)
+                        ? DecorationImage(image: CachedNetworkImageProvider(_otherAvatarUrl!), fit: BoxFit.cover)
+                        : null,
                   ),
-                  child: Center(child: Text(otherName[0],
-                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))),
+                  child: _otherAvatarUrl == null
+                      ? Center(child: Text(otherName.isNotEmpty ? otherName[0] : '?',
+                          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)))
+                      : null,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -107,14 +159,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemCount: messages.length,
                     itemBuilder: (_, i) => _MessageBubble(
                       message: messages[i],
-                      isMe: messages[i].senderId == 'me' || messages[i].senderId == 'me_provider',
+                      isMe: messages[i].senderId == userId,
                     ),
                   ),
           ),
 
           // Input
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
             decoration: BoxDecoration(
               color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.border)),
@@ -161,7 +213,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
                       boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10)],
                     ),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                    child: _sending
+                        ? const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)))
+                        : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -174,7 +228,7 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  final MessageModel message;
+  final BidMessage message;
   final bool isMe;
   const _MessageBubble({required this.message, required this.isMe});
 
@@ -212,11 +266,11 @@ class _MessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(message.text,
+                  Text(message.message,
                     style: GoogleFonts.inter(color: Colors.white, fontSize: 13, height: 1.4)),
                   const SizedBox(height: 4),
                   Text(
-                    '${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                    '${message.createdAt.hour}:${message.createdAt.minute.toString().padLeft(2, '0')}',
                     style: GoogleFonts.inter(color: Colors.white.withOpacity(0.6), fontSize: 10),
                   ),
                 ],

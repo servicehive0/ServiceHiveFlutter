@@ -1,24 +1,98 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
+import '../../models/provider_model.dart';
 import '../../providers/provider_list_provider.dart';
+import '../../services/avatar_cache.dart';
 
-class ProviderProfileScreen extends StatelessWidget {
+class ProviderProfileScreen extends StatefulWidget {
   final String providerId;
   const ProviderProfileScreen({super.key, required this.providerId});
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.read<ProviderListProvider>().getById(providerId);
+  State<ProviderProfileScreen> createState() => _ProviderProfileScreenState();
+}
 
-    if (provider == null) {
+class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
+  ProviderModel? _provider;
+  String? _avatarUrl;
+  bool _loading = true;
+  bool _notFound = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    // Instant paint if this provider is already in the shared cached list
+    // (the common case — reached from a screen that already called
+    // ProviderListProvider.fetch()); otherwise fall back to a direct
+    // fetch by id so a deep link or a cold list cache doesn't dead-end on
+    // "Provider not found" the way this screen used to.
+    final cached = context.read<ProviderListProvider>().getById(widget.providerId);
+    if (cached != null) {
+      setState(() { _provider = cached; _loading = false; });
+    } else {
+      try {
+        final row = await Supabase.instance.client
+            .from('users')
+            .select('id, name, phone, city, area, provider_profiles(*)')
+            .eq('id', widget.providerId)
+            .maybeSingle();
+        if (row == null) {
+          if (mounted) setState(() { _loading = false; _notFound = true; });
+          return;
+        }
+        final model = ProviderListProvider.rowToModel(row);
+        if (mounted) setState(() { _provider = model; _loading = false; });
+      } catch (_) {
+        if (mounted) setState(() { _loading = false; _notFound = true; });
+      }
+    }
+    final url = await AvatarCache.getAvatar(widget.providerId);
+    if (mounted && url != null) setState(() => _avatarUrl = url);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
       return Scaffold(
         backgroundColor: AppColors.bg,
-        body: Center(child: Text('Provider not found', style: GoogleFonts.inter(color: Colors.white))),
+        body: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
       );
     }
+
+    if (_provider == null || _notFound) {
+      return Scaffold(
+        backgroundColor: AppColors.bg,
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('Provider not found', style: GoogleFonts.inter(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => context.pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface2,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text('Go Back', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+              ),
+            ),
+          ]),
+        ),
+      );
+    }
+
+    final provider = _provider!;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -72,11 +146,16 @@ class ProviderProfileScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+                            image: (_avatarUrl != null)
+                                ? DecorationImage(image: CachedNetworkImageProvider(_avatarUrl!), fit: BoxFit.cover)
+                                : null,
                           ),
-                          child: Center(
-                            child: Text(provider.name[0],
-                              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 32)),
-                          ),
+                          child: _avatarUrl == null
+                              ? Center(
+                                  child: Text(provider.name.isNotEmpty ? provider.name[0].toUpperCase() : '?',
+                                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 32)),
+                                )
+                              : null,
                         ),
                         Container(
                           width: 20, height: 20,
@@ -90,18 +169,21 @@ class ProviderProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(provider.name,
-                      style: GoogleFonts.inter(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                      style: GoogleFonts.inter(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
                     Text(provider.serviceType,
-                      style: GoogleFonts.inter(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
+                      style: GoogleFonts.inter(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.location_on_rounded, color: AppColors.textMuted, size: 14),
                         const SizedBox(width: 3),
-                        Text('${provider.area}, ${provider.city}',
-                          style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12)),
+                        Flexible(child: Text('${provider.area}, ${provider.city}',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12))),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -143,7 +225,8 @@ class ProviderProfileScreen extends StatelessWidget {
           _SectionCard(
             title: 'About',
             child: Text(provider.about,
-              style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, height: 1.6)),
+              style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, height: 1.6),
+              maxLines: 5, overflow: TextOverflow.ellipsis),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 12)),
@@ -250,7 +333,7 @@ class _DetailRow extends StatelessWidget {
       const SizedBox(width: 10),
       Text('$label:', style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 12)),
       const SizedBox(width: 6),
-      Expanded(child: Text(value, style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+      Expanded(child: Text(value, style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
     ],
   );
 }
