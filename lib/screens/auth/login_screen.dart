@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
+import '../../providers/services_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/error_banner.dart';
 import '../../widgets/floating_particles.dart';
+import '../../widgets/location_dropdown.dart';
 import '../../widgets/role_toggle.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool startInWorkerRegister;
+  const LoginScreen({super.key, this.startInWorkerRegister = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -21,8 +26,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
   // Mode
-  bool _isLogin = true;
-  bool _isWorker = false;
+  late bool _isLogin = !widget.startInWorkerRegister;
+  late bool _isWorker = widget.startInWorkerRegister;
 
   // Login controllers
   final _loginIdCtrl = TextEditingController();
@@ -38,12 +43,79 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   final _areaCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   final _cnicCtrl = TextEditingController();
-  final _specializationCtrl = TextEditingController();
+  String? _selectedSpec;
   final _experienceCtrl = TextEditingController();
   final _skillsCtrl = TextEditingController();
   bool _agreedToTerms = false;
   int _step = 1;
   int get _totalSteps => _isWorker ? 4 : 2;
+
+  // KYC files picked during registration (step 3/4). Keyed by the same names
+  // AuthProvider.setPendingProviderFiles/register expects: cnic_front,
+  // cnic_back, selfie, portfolio, certificates.
+  final Map<String, Uint8List> _kycFiles = {};
+  final Map<String, String> _kycFileNames = {};
+  String? _kycUploadingKey;
+
+  Future<void> _pickKycFile(String key) async {
+    // Selfie must be a live camera capture (matches KYC intent — proves the
+    // applicant physically holds the ID at signup time); everything else
+    // allows picking an existing photo/scan from the gallery.
+    ImageSource? source;
+    if (key == 'selfie') {
+      source = ImageSource.camera;
+    } else {
+      source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 8),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: Text('Take Photo', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: Text('Choose from Gallery', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ]),
+        ),
+      );
+    }
+    if (source == null) return;
+
+    try {
+      setState(() => _kycUploadingKey = key);
+      final picked = await ImagePicker().pickImage(source: source, imageQuality: 85);
+      if (picked == null) {
+        setState(() => _kycUploadingKey = null);
+        return;
+      }
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _kycFiles[key] = bytes;
+        _kycFileNames[key] = picked.name;
+        _kycUploadingKey = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _kycUploadingKey = null);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not access camera/gallery. Check app permissions.', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+    }
+  }
 
   // location loaded from backend via LocationProvider
 
@@ -78,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _nameCtrl.dispose(); _emailCtrl.dispose(); _phoneCtrl.dispose();
     _passCtrl.dispose(); _confirmPassCtrl.dispose(); _cityCtrl.dispose();
     _areaCtrl.dispose(); _addressCtrl.dispose(); _cnicCtrl.dispose();
-    _specializationCtrl.dispose(); _experienceCtrl.dispose(); _skillsCtrl.dispose();
+    _experienceCtrl.dispose(); _skillsCtrl.dispose();
     super.dispose();
   }
 
@@ -129,11 +201,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       if (!_agreedToTerms) return 'Please agree to Terms & Conditions';
     }
     if (_isWorker && _step == 3) {
-      if (!RegExp(r'^[0-9]{5}-[0-9]{7}-[0-9]{1}$').hasMatch(_cnicCtrl.text.trim())) return 'CNIC: 42XXX-XXXXXXX-X';
+      if (!RegExp(r'^[0-9]{5}-[0-9]{7}-[0-9]{1}$').hasMatch(_cnicCtrl.text.trim())) return 'CNIC must be 13 digits, format 42XXX-XXXXXXX-X';
+      if (!_kycFiles.containsKey('cnic_front') || !_kycFiles.containsKey('cnic_back')) return 'Please upload both sides of your CNIC';
+      if (!_kycFiles.containsKey('selfie')) return 'Please upload a selfie holding your ID';
     }
     if (_isWorker && _step == 4) {
-      if (_specializationCtrl.text.isEmpty) return 'Please enter specialization';
-      if (_experienceCtrl.text.isEmpty) return 'Please enter experience';
+      if (_selectedSpec == null || _selectedSpec!.isEmpty) return 'Please select your specialization';
+      final exp = _experienceCtrl.text.trim();
+      if (exp.isEmpty) return 'Experience required (e.g. 5y, 3m, 2w)';
+      if (!RegExp(r'^\d+[ymwd](\s+\d+[ymwd])*$').hasMatch(exp)) return 'Format: 5y / 3m / 2w / 10d (number + y/m/w/d)';
     }
     return null;
   }
@@ -153,9 +229,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       setState(() => _step++);
       _animateStep();
       if (_step == 2) context.read<LocationProvider>().fetch();
+      if (_step == 3) {
+        final svcs = context.read<ServicesProvider>();
+        if (!svcs.loaded && !svcs.loading) svcs.fetch();
+      }
       return;
     }
     final auth = context.read<AuthProvider>();
+    if (_isWorker && _kycFiles.isNotEmpty) {
+      auth.setPendingProviderFiles(_kycFiles);
+    }
     final success = await auth.register(
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
@@ -165,6 +248,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       city: _selectedCity ?? '',
       area: _selectedArea ?? '',
       address: _addressCtrl.text.trim(),
+      cnic: _isWorker ? _cnicCtrl.text.trim() : '',
+      specialization: _isWorker ? (_selectedSpec ?? '') : '',
+      skills: _isWorker ? _skillsCtrl.text.trim() : '',
+      experience: _isWorker ? _experienceCtrl.text.trim() : '',
     );
     if (success && mounted) context.go('/verify-otp', extra: auth.pendingEmail ?? _emailCtrl.text.trim());
   }
@@ -173,6 +260,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final isLoading = auth.status == AuthStatus.loading;
+    final approved = auth.justApproved;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -189,6 +277,33 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           SafeArea(
             child: Column(
               children: [
+                // ── Approved banner ──────────────────────────────────
+                if (approved)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.success.withOpacity(0.35)),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.verified_rounded, color: AppColors.success, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Account verified! You can now login as a provider.',
+                          style: GoogleFonts.inter(color: AppColors.success, fontSize: 13, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => auth.justApproved = false),
+                        child: const Icon(Icons.close_rounded, color: AppColors.success, size: 18),
+                      ),
+                    ]),
+                  ),
+
                 // Header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
@@ -403,9 +518,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   Widget _step1() => Column(children: [
     AppInput(label: 'Full Name', hint: 'Enter Full Name', controller: _nameCtrl,
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))],
+      maxLength: 50,
       prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.textDim, size: 18)),
     const SizedBox(height: 14),
     AppInput(label: 'Phone Number', hint: '03XXXXXXXXX', controller: _phoneCtrl,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      maxLength: 11,
       keyboardType: TextInputType.phone,
       prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textDim, size: 18)),
     const SizedBox(height: 14),
@@ -484,30 +603,93 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     const SizedBox(height: 14),
     AppInput(label: 'CNIC Number', hint: '42XXX-XXXXXXX-X', controller: _cnicCtrl,
       keyboardType: TextInputType.number,
+      inputFormatters: [_CnicInputFormatter()],
+      maxLength: 15,
       prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.textDim, size: 18)),
     const SizedBox(height: 14),
-    _UploadTile(label: 'CNIC Front', icon: Icons.credit_card_outlined),
+    _UploadTile(
+      label: 'CNIC Front', icon: Icons.credit_card_outlined,
+      fileName: _kycFileNames['cnic_front'], uploading: _kycUploadingKey == 'cnic_front',
+      onTap: () => _pickKycFile('cnic_front'),
+    ),
     const SizedBox(height: 10),
-    _UploadTile(label: 'CNIC Back', icon: Icons.credit_card_outlined),
+    _UploadTile(
+      label: 'CNIC Back', icon: Icons.credit_card_outlined,
+      fileName: _kycFileNames['cnic_back'], uploading: _kycUploadingKey == 'cnic_back',
+      onTap: () => _pickKycFile('cnic_back'),
+    ),
     const SizedBox(height: 10),
-    _UploadTile(label: 'Selfie with ID', icon: Icons.camera_alt_outlined),
+    _UploadTile(
+      label: 'Selfie with ID', icon: Icons.camera_alt_outlined,
+      fileName: _kycFileNames['selfie'], uploading: _kycUploadingKey == 'selfie',
+      onTap: () => _pickKycFile('selfie'),
+    ),
   ]);
 
-  Widget _step4() => Column(children: [
-    AppInput(label: 'Specialization', hint: 'e.g. Electrician, Plumber', controller: _specializationCtrl,
-      prefixIcon: const Icon(Icons.build_outlined, color: AppColors.textDim, size: 18)),
+  Widget _step4() {
+    final servicesProv = context.watch<ServicesProvider>();
+    final serviceNames = servicesProv.services.map((s) => s.name).toList();
+    return Column(children: [
+    if (servicesProv.loading)
+      const Padding(
+        padding: EdgeInsets.only(bottom: 14),
+        child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+      )
+    else
+      LocationDropdown(
+        label: 'Specialization',
+        hint: serviceNames.isEmpty ? 'No services yet — add from admin' : 'Select your service type',
+        icon: Icons.build_outlined,
+        value: _selectedSpec,
+        items: serviceNames,
+        onChanged: (v) => setState(() => _selectedSpec = v),
+      ),
     const SizedBox(height: 14),
-    AppInput(label: 'Experience', hint: 'e.g. 5 years', controller: _experienceCtrl,
+    AppInput(label: 'Experience', hint: '5y / 3m / 2w / 10d', controller: _experienceCtrl,
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9ymwd\s]'))],
+      maxLength: 10,
       prefixIcon: const Icon(Icons.workspace_premium_outlined, color: AppColors.textDim, size: 18)),
     const SizedBox(height: 14),
     AppInput(label: 'Skills & Expertise', hint: 'e.g. Wiring, Solar panels',
       controller: _skillsCtrl, maxLines: 3,
       prefixIcon: const Icon(Icons.star_outline_rounded, color: AppColors.textDim, size: 18)),
     const SizedBox(height: 10),
-    _UploadTile(label: 'Work Portfolio', icon: Icons.image_outlined),
+    _UploadTile(
+      label: 'Work Portfolio (Optional)', icon: Icons.image_outlined,
+      fileName: _kycFileNames['portfolio'], uploading: _kycUploadingKey == 'portfolio',
+      onTap: () => _pickKycFile('portfolio'),
+    ),
     const SizedBox(height: 10),
-    _UploadTile(label: 'Certificates', icon: Icons.description_outlined),
-  ]);
+    _UploadTile(
+      label: 'Certificates (Optional)', icon: Icons.description_outlined,
+      fileName: _kycFileNames['certificates'], uploading: _kycUploadingKey == 'certificates',
+      onTap: () => _pickKycFile('certificates'),
+    ),
+    ]);
+  }
+}
+
+// Auto-inserts the two hyphens as the user types digits (42401-1234567-1)
+// and hard-caps at 13 digits, so a CNIC can never be typed too short/long
+// or with hyphens in the wrong place — matches Pakistan's fixed CNIC format.
+class _CnicInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final capped = digits.length > 13 ? digits.substring(0, 13) : digits;
+
+    final buffer = StringBuffer();
+    for (var i = 0; i < capped.length; i++) {
+      buffer.write(capped[i]);
+      if (i == 4 || i == 11) buffer.write('-');
+    }
+    final formatted = buffer.toString();
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
 
 class _StepIndicator extends StatelessWidget {
@@ -540,30 +722,46 @@ class _StepIndicator extends StatelessWidget {
 class _UploadTile extends StatelessWidget {
   final String label;
   final IconData icon;
-  const _UploadTile({required this.label, required this.icon});
+  final String? fileName;
+  final bool uploading;
+  final VoidCallback onTap;
+  const _UploadTile({required this.label, required this.icon, required this.onTap, this.fileName, this.uploading = false});
 
   @override
   Widget build(BuildContext context) {
+    final done = fileName != null && !uploading;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label.toUpperCase(),
           style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.textMuted, letterSpacing: 0.8)),
         const SizedBox(height: 6),
-        Container(
-          height: 64,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-            color: Colors.white.withOpacity(0.02),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: AppColors.textDim, size: 20),
-              const SizedBox(width: 10),
-              Text('Tap to Upload', style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
-            ],
+        GestureDetector(
+          onTap: uploading ? null : onTap,
+          child: Container(
+            height: 64,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: done ? AppColors.primary : AppColors.border),
+              color: Colors.white.withOpacity(0.02),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (uploading)
+                  const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                else
+                  Icon(done ? Icons.check_circle_rounded : icon, color: done ? AppColors.primary : AppColors.textDim, size: 20),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    uploading ? 'Uploading...' : (done ? fileName! : 'Tap to Upload'),
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(color: done ? Colors.white : AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -611,7 +809,9 @@ class _LocationDropdown extends StatelessWidget {
                 const SizedBox(width: 14),
                 Icon(icon, color: AppColors.textDim, size: 18),
                 const SizedBox(width: 10),
-                Text(hint, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14)),
+                Flexible(child: Text(hint,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14))),
               ]),
               isExpanded: true,
               dropdownColor: AppColors.surface,
@@ -629,7 +829,9 @@ class _LocationDropdown extends StatelessWidget {
               selectedItemBuilder: (_) => items.map((item) => Row(children: [
                 Icon(icon, color: AppColors.primary, size: 18),
                 const SizedBox(width: 10),
-                Text(item, style: GoogleFonts.inter(color: AppColors.text, fontSize: 14, fontWeight: FontWeight.w600)),
+                Flexible(child: Text(item,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(color: AppColors.text, fontSize: 14, fontWeight: FontWeight.w600))),
               ])).toList(),
             ),
           ),

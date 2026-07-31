@@ -54,7 +54,8 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
         scale: _scale,
         child: Container(
           width: double.infinity,
-          height: 56,
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: widget.outlined
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(100),
@@ -89,14 +90,20 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        widget.label,
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          letterSpacing: 1.2,
+                      Flexible(
+                        child: Text(
+                          widget.label,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            letterSpacing: 1.2,
+                          ),
                         ),
                       ),
                       if (widget.icon != null) ...[

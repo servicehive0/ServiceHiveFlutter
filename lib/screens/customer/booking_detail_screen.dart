@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/booking_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 
 class BookingDetailScreen extends StatelessWidget {
@@ -21,7 +22,15 @@ class BookingDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          final user = context.read<AuthProvider>().user;
+          if (user != null) await context.read<BookingProvider>().load(user.id, user.role);
+        },
+        color: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
@@ -68,9 +77,11 @@ class BookingDetailScreen extends StatelessWidget {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(booking.status.label,
-                          style: GoogleFonts.inter(color: booking.status.color, fontSize: 16, fontWeight: FontWeight.w800)),
+                          style: GoogleFonts.inter(color: booking.status.color, fontSize: 16, fontWeight: FontWeight.w800),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text(booking.serviceType,
-                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text('#${booking.id}',
                           style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11)),
                       ]),
@@ -104,7 +115,7 @@ class BookingDetailScreen extends StatelessWidget {
           ]),
 
           _InfoCard(title: 'Description', children: [
-            Text(booking.description, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, height: 1.6)),
+            Text(booking.description, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13, height: 1.6), maxLines: 3, overflow: TextOverflow.ellipsis),
           ]),
 
           if (booking.rating != null)
@@ -124,6 +135,7 @@ class BookingDetailScreen extends StatelessWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+        ),
       ),
 
       // Bottom actions

@@ -90,7 +90,7 @@ class _BookServiceScreenState extends State<BookServiceScreen> {
         context: context,
         barrierDismissible: false,
         builder: (_) => _SuccessDialog(onDone: () {
-          context.go('/customer?tab=2');
+          context.go('/customer?tab=3');
         }),
       );
     }

@@ -1,14 +1,16 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/location_provider.dart';
+import '../../providers/provider_list_provider.dart';
+import '../../providers/services_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/location_dropdown.dart';
-import 'change_password_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -29,6 +31,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _saving          = false;
   bool _gettingLocation = false;
 
+  String? _selectedSpecialization;
+  bool _savingSpecialization = false;
+  final _skillInputCtrl = TextEditingController();
+  final _skillInputFocus = FocusNode();
+  List<String> _skills = [];
+  final _experienceCtrl = TextEditingController();
+  final _aboutCtrl = TextEditingController();
+  final _rateCtrl = TextEditingController();
+
+  // Which visibility toggle (if any) is mid-save — per-key rather than one
+  // shared bool, so flipping one switch doesn't spin all of them.
+  String? _savingVisibilityKey;
+
   @override
   void initState() {
     super.initState();
@@ -44,8 +59,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _longitude        = user.longitude;
     }
     // Fetch cities from backend
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<LocationProvider>().fetch();
+      if (user?.role == 'provider') {
+        await context.read<ServicesProvider>().fetch();
+        // service_type/skills/experience have always worked here — select
+        // them on their own first so a problem with the newer about/
+        // rate_per_hour columns (e.g. one not existing yet in this DB) can
+        // never take the whole query down and blank out fields that were
+        // already saving fine.
+        try {
+          final data = await Supabase.instance.client
+              .from('provider_profiles')
+              .select('service_type, skills, experience')
+              .eq('id', user!.id)
+              .maybeSingle();
+          if (!mounted) return;
+          final current = data?['service_type'] as String?;
+          if (current != null && current.isNotEmpty) {
+            setState(() => _selectedSpecialization = current);
+          }
+          final skills = data?['skills'];
+          _skills = skills is List
+              ? List<String>.from(skills)
+              : (skills is String && skills.isNotEmpty
+                  ? skills.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList()
+                  : <String>[]);
+          _experienceCtrl.text = data?['experience'] as String? ?? '';
+          if (mounted) setState(() {});
+        } catch (e, st) {
+          debugPrint('EditProfileScreen provider-profile load error: $e\n$st');
+        }
+        try {
+          final extra = await Supabase.instance.client
+              .from('provider_profiles')
+              .select('about, rate_per_hour')
+              .eq('id', user!.id)
+              .maybeSingle();
+          if (!mounted) return;
+          _aboutCtrl.text = extra?['about'] as String? ?? '';
+          final rate = extra?['rate_per_hour'] as num?;
+          _rateCtrl.text = (rate != null && rate > 0) ? rate.toInt().toString() : '';
+          if (mounted) setState(() {});
+        } catch (e, st) {
+          debugPrint('EditProfileScreen about/rate load error: $e\n$st');
+        }
+      }
     });
   }
 
@@ -54,7 +113,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
+    _skillInputCtrl.dispose();
+    _skillInputFocus.dispose();
+    _experienceCtrl.dispose();
+    _aboutCtrl.dispose();
+    _rateCtrl.dispose();
     super.dispose();
+  }
+
+  // Comma or Enter commits whatever's typed as a new skill chip — lets
+  // someone type "Wiring, Solar panels" in one go (comma-separated, same as
+  // before) or add them one at a time and still end up with the same list.
+  void _commitSkillInput() {
+    final raw = _skillInputCtrl.text;
+    final parts = raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
+    final added = <String>[];
+    for (final s in parts) {
+      if (!_skills.contains(s)) added.add(s);
+    }
+    if (added.isEmpty) {
+      _skillInputCtrl.clear();
+      return;
+    }
+    setState(() {
+      _skills = [..._skills, ...added];
+      _skillInputCtrl.clear();
+    });
+  }
+
+  void _removeSkill(String skill) {
+    setState(() => _skills = _skills.where((s) => s != skill).toList());
+  }
+
+  Future<bool> _saveSkillsExperience() async {
+    _commitSkillInput();
+    try {
+      await Supabase.instance.client.from('provider_profiles').upsert({
+        'id': context.read<AuthProvider>().user!.id,
+        'skills': _skills,
+        'experience': _experienceCtrl.text.trim(),
+        'about': _aboutCtrl.text.trim(),
+        'rate_per_hour': num.tryParse(_rateCtrl.text.trim()) ?? 0,
+      }, onConflict: 'id');
+      return true;
+    } catch (e, st) {
+      debugPrint('_saveSkillsExperience error: $e\n$st');
+      return false;
+    }
+  }
+
+  Future<void> _saveSpecialization(String serviceType) async {
+    setState(() { _selectedSpecialization = serviceType; _savingSpecialization = true; });
+    final ok = await context.read<AuthProvider>().updateProviderSpecialization(serviceType);
+    if (!mounted) return;
+    setState(() => _savingSpecialization = false);
+    _snack(ok ? 'Specialization saved!' : 'Failed to save. Try again.', error: !ok);
   }
 
   Future<void> _save() async {
@@ -65,7 +178,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _saving = true);
 
     final auth = context.read<AuthProvider>();
-    final ok = await auth.updateProfile(
+    var ok = await auth.updateProfile(
       name:      _nameCtrl.text.trim(),
       phone:     _phoneCtrl.text.trim(),
       city:      _selectedCity ?? '',
@@ -74,6 +187,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       latitude:  _latitude,
       longitude: _longitude,
     );
+
+    if (ok && auth.user?.role == 'provider') {
+      ok = await _saveSkillsExperience();
+    }
 
     setState(() => _saving = false);
 
@@ -86,66 +203,46 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _captureLocation() async {
-    setState(() => _gettingLocation = true);
 
-    try {
-      // 1. Check if location service is ON
-      final serviceOn = await Geolocator.isLocationServiceEnabled();
-      if (!serviceOn) {
-        if (mounted) {
-          _snack('Phone ka Location / GPS on karo, phir dobara try karo.', error: true);
-        }
-        setState(() => _gettingLocation = false);
-        return;
-      }
+  Future<void> _toggleLiveLocation(bool on) async {
+    final auth = context.read<AuthProvider>();
 
-      // 2. Check permission
-      LocationPermission perm = await Geolocator.checkPermission();
-
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-
-      if (perm == LocationPermission.deniedForever) {
-        if (mounted) {
-          // Open app settings so user can manually enable
-          await Geolocator.openAppSettings();
-          _snack('Permission denied. Settings se location allow karo.', error: true);
-        }
-        setState(() => _gettingLocation = false);
-        return;
-      }
-
-      if (perm == LocationPermission.denied) {
-        if (mounted) {
-          _snack('Location permission allow karo.', error: true);
-        }
-        setState(() => _gettingLocation = false);
-        return;
-      }
-
-      // 3. Get position (no timeLimit to avoid compatibility issues)
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-        ),
-      );
-
-      if (mounted) {
-        setState(() {
-          _latitude  = pos.latitude;
-          _longitude = pos.longitude;
-        });
-        _snack('Location save ho gaya! Changes save karo.');
-      }
-    } catch (e) {
-      if (mounted) {
-        _snack('Location nahi mila. GPS on hai? Try again.', error: true);
-      }
+    // A provider being Online requires live location to stay on (see
+    // provider_home_tab.dart's _toggleOnline) — if they turned it off here
+    // while online, they'd show as "Online" with no working location,
+    // which is exactly what that linkage is meant to prevent. Block the
+    // OFF direction here instead; going offline first is the only way.
+    if (!on && auth.user?.role == 'provider' && context.read<ProviderListProvider>().isOnline) {
+      _snack('Go offline first to turn off location.', error: true);
+      return;
     }
 
+    setState(() => _gettingLocation = true);
+    if (on) {
+      final started = await auth.startLiveLocation();
+      if (!started && mounted) {
+        _snack('Could not start live location. Check GPS/permissions.', error: true);
+      } else if (mounted) {
+        setState(() {
+          _latitude  = auth.user?.latitude;
+          _longitude = auth.user?.longitude;
+        });
+      }
+    } else {
+      auth.stopLiveLocation();
+    }
     if (mounted) setState(() => _gettingLocation = false);
+  }
+
+  Future<void> _toggleVisibility({bool? showPhone, bool? showEmail}) async {
+    final key = showPhone != null ? 'phone' : 'email';
+    setState(() => _savingVisibilityKey = key);
+    final ok = await context.read<AuthProvider>().updateVisibility(
+      showPhone: showPhone, showEmail: showEmail,
+    );
+    if (!mounted) return;
+    setState(() => _savingVisibilityKey = null);
+    if (!ok) _snack('Could not save. Try again.', error: true);
   }
 
   void _snack(String msg, {bool error = false}) {
@@ -201,16 +298,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     width: 88, height: 88,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryDark]),
+                      gradient: user?.avatarUrl == null
+                          ? const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark])
+                          : null,
+                      image: user?.avatarUrl != null
+                          ? DecorationImage(image: CachedNetworkImageProvider(user!.avatarUrl!), fit: BoxFit.cover)
+                          : null,
                       boxShadow: [BoxShadow(
                           color: AppColors.primary.withOpacity(0.4), blurRadius: 20)],
                     ),
-                    child: Center(
-                      child: Text(initials,
-                        style: GoogleFonts.inter(
-                            color: Colors.white, fontWeight: FontWeight.w900, fontSize: 30)),
-                    ),
+                    child: user?.avatarUrl == null
+                        ? Center(
+                            child: Text(initials,
+                              style: GoogleFonts.inter(
+                                  color: Colors.white, fontWeight: FontWeight.w900, fontSize: 30)),
+                          )
+                        : null,
                   ),
                 ],
               ),
@@ -291,94 +394,195 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 14),
 
             // ── Current Location ─────────────────────────────
-            _label('Current Location (GPS)'),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: _gettingLocation ? null : _captureLocation,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _latitude != null
-                      ? AppColors.success.withOpacity(0.07)
-                      : AppColors.error.withOpacity(0.07),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _latitude != null
-                        ? AppColors.success.withOpacity(0.3)
-                        : AppColors.error.withOpacity(0.4),
+            // While ON, AuthProvider pushes a fresh GPS fix to `users` every
+            // 30s for as long as the app stays open (foreground-only — true
+            // always-on background tracking needs a native foreground
+            // service, out of scope here).
+            Builder(builder: (context) {
+              final liveOn = context.watch<AuthProvider>().liveLocationEnabled;
+              return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.surface2,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(children: [
+                Icon(
+                  liveOn ? Icons.location_on_rounded : Icons.location_off_rounded,
+                  color: liveOn ? AppColors.success : AppColors.textDim,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Live Location (GPS)',
+                        style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text(
+                        _gettingLocation
+                            ? 'Getting location...'
+                            : liveOn && _latitude != null
+                                ? '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}'
+                                : liveOn
+                                    ? 'Tracking...'
+                                    : 'Share your live location while app is open',
+                        style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 11),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(children: [
-                  // Red/Green pin icon
-                  Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: (_latitude != null
-                          ? AppColors.success
-                          : AppColors.error).withOpacity(0.12),
-                    ),
-                    child: _gettingLocation
-                        ? const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: AppColors.primary),
-                          )
-                        : Icon(
-                            Icons.location_on_rounded,
-                            color: _latitude != null
-                                ? AppColors.success
-                                : AppColors.error,
-                            size: 24,
-                          ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _latitude != null
-                              ? 'Location Saved'
-                              : 'Location Not Set',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
+                _gettingLocation
+                    ? const SizedBox(
+                        width: 24, height: 24,
+                        child: Padding(
+                          padding: EdgeInsets.all(4),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _latitude != null
-                              ? '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}'
-                              : 'Tap to capture your current GPS location',
-                          style: GoogleFonts.inter(
-                            color: AppColors.textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    _latitude != null
-                        ? Icons.refresh_rounded
-                        : Icons.gps_fixed_rounded,
-                    color: _latitude != null
-                        ? AppColors.success
-                        : AppColors.error,
-                    size: 20,
-                  ),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Used to find nearby service providers.',
-              style: GoogleFonts.inter(
-                  color: AppColors.textDim, fontSize: 11),
-            ),
+                      )
+                    : Switch(
+                        value: liveOn,
+                        activeThumbColor: AppColors.primary,
+                        onChanged: _toggleLiveLocation,
+                      ),
+              ]),
+              );
+            }),
             const SizedBox(height: 28),
+
+            // ── Privacy ─────────────────────────────────────────
+            // Lets a user hide phone/email from OTHER users viewing their
+            // profile (customer_profile_screen.dart / provider_profile_screen.dart)
+            // — doesn't affect what admins or the app itself can see, only
+            // the public-profile view.
+            _label('Privacy'),
+            const SizedBox(height: 12),
+            Builder(builder: (context) {
+              final u = context.watch<AuthProvider>().user;
+              return Column(children: [
+                _visibilityRow(
+                  icon: Icons.phone_outlined,
+                  title: 'Show Phone Number',
+                  subtitle: 'Let others see your phone on your profile',
+                  value: u?.showPhone ?? true,
+                  saving: _savingVisibilityKey == 'phone',
+                  onChanged: (v) => _toggleVisibility(showPhone: v),
+                ),
+                const SizedBox(height: 10),
+                _visibilityRow(
+                  icon: Icons.email_outlined,
+                  title: 'Show Email',
+                  subtitle: 'Let others see your email on your profile',
+                  value: u?.showEmail ?? true,
+                  saving: _savingVisibilityKey == 'email',
+                  onChanged: (v) => _toggleVisibility(showEmail: v),
+                ),
+              ]);
+            }),
+            const SizedBox(height: 28),
+
+            // ── Specialization (providers only) ────────────────
+            // Locked/read-only — a provider randomly switching their trade
+            // would invalidate their KYC/experience, so this only offers a
+            // one-time set-if-missing path (still stuck on "Profile
+            // Incomplete" from before this screen existed) rather than a
+            // freely editable dropdown.
+            if (user?.role == 'provider') ...[
+              _label('Specialization'),
+              const SizedBox(height: 12),
+              _selectedSpecialization != null
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface2,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.build_outlined, color: AppColors.textDim, size: 18),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(_selectedSpecialization!,
+                            style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                        ),
+                        const Icon(Icons.lock_outline_rounded, color: AppColors.textDim, size: 16),
+                      ]),
+                    )
+                  : Consumer<ServicesProvider>(
+                      builder: (context, services, _) {
+                        if (services.loading) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primary, strokeWidth: 2),
+                            ),
+                          );
+                        }
+                        return LocationDropdown(
+                          label: 'Service Type',
+                          hint: 'Select your specialization',
+                          icon: Icons.build_outlined,
+                          value: _selectedSpecialization,
+                          items: services.services.map((s) => s.name).toList(),
+                          onChanged: (v) {
+                            if (v != null) _saveSpecialization(v);
+                          },
+                        );
+                      },
+                    ),
+              const SizedBox(height: 6),
+              Text(
+                _selectedSpecialization == null
+                    ? 'Required to receive matching service requests.'
+                    : 'Contact support to change your specialization.',
+                style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11),
+              ),
+              if (_savingSpecialization) ...[
+                const SizedBox(height: 8),
+                const Center(
+                  child: SizedBox(
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 28),
+
+              // ── Skills & Experience ──────────────────────────
+              // Unlike specialization, these are meant to change over time
+              // (a provider picks up new skills, gains more years) so they
+              // stay freely editable and save with the rest of the form.
+              _label('Skills & Experience'),
+              const SizedBox(height: 12),
+              _skillsChipInput(),
+              const SizedBox(height: 14),
+              AppInput(
+                label: 'Experience',
+                hint: '5y / 3m / 2w / 10d',
+                controller: _experienceCtrl,
+                prefixIcon: const Icon(Icons.workspace_premium_outlined, color: AppColors.textDim, size: 18),
+              ),
+              const SizedBox(height: 14),
+              AppInput(
+                label: 'About',
+                hint: 'Tell customers a bit about yourself and your work',
+                controller: _aboutCtrl,
+                maxLines: 4,
+                prefixIcon: const Icon(Icons.info_outline_rounded, color: AppColors.textDim, size: 18),
+              ),
+              const SizedBox(height: 14),
+              AppInput(
+                label: 'Rate (Rs / hour)',
+                hint: 'e.g. 500',
+                controller: _rateCtrl,
+                keyboardType: TextInputType.number,
+                prefixIcon: const Icon(Icons.attach_money_rounded, color: AppColors.textDim, size: 18),
+              ),
+              const SizedBox(height: 28),
+            ],
 
             AppButton(
               label: 'SAVE CHANGES',
@@ -386,43 +590,56 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               isLoading: _saving,
               onTap: _save,
             ),
-            const SizedBox(height: 12),
-
-            // Change Password button
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ChangePasswordScreen()),
-              ),
-              child: Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.lock_reset_rounded,
-                      color: AppColors.textMuted, size: 20),
-                    const SizedBox(width: 10),
-                    Text('Change Password',
-                      style: GoogleFonts.inter(
-                        color: AppColors.textMuted,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      )),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 40),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _visibilityRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required bool saving,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface2,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(children: [
+        Icon(icon, color: value ? AppColors.success : AppColors.textDim, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+              Text(subtitle,
+                style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 11),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+        saving
+            ? const SizedBox(
+                width: 24, height: 24,
+                child: Padding(
+                  padding: EdgeInsets.all(4),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                ),
+              )
+            : Switch(
+                value: value,
+                activeThumbColor: AppColors.primary,
+                onChanged: onChanged,
+              ),
+      ]),
     );
   }
 
@@ -434,4 +651,74 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         fontWeight: FontWeight.w800,
         letterSpacing: 1),
   );
+
+  // Tag-style input: type a skill, hit comma/Enter (or just move on and tap
+  // Save) and it becomes its own removable chip, so multiple skills read as
+  // distinct labels instead of one long comma-separated string.
+  Widget _skillsChipInput() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SKILLS',
+            style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+          const SizedBox(height: 10),
+          if (_skills.isNotEmpty) ...[
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: _skills.map((s) => Container(
+                padding: const EdgeInsets.only(left: 12, right: 6, top: 6, bottom: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(s, style: GoogleFonts.inter(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => _removeSkill(s),
+                      child: Icon(Icons.close_rounded, size: 16, color: AppColors.primary.withOpacity(0.8)),
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 10),
+          ],
+          TextField(
+            controller: _skillInputCtrl,
+            focusNode: _skillInputFocus,
+            style: GoogleFonts.inter(color: AppColors.text, fontSize: 15),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: _skills.isEmpty ? 'e.g. Wiring, Solar panels' : 'Add another skill…',
+              hintStyle: GoogleFonts.inter(color: AppColors.textDim, fontSize: 15),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) {
+              _commitSkillInput();
+              _skillInputFocus.requestFocus();
+            },
+            onChanged: (v) {
+              if (v.endsWith(',')) _commitSkillInput();
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

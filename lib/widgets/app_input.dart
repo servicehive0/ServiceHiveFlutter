@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme.dart';
 
@@ -12,6 +13,8 @@ class AppInput extends StatefulWidget {
   final String? Function(String?)? validator;
   final Widget? prefixIcon;
   final int maxLines;
+  final List<TextInputFormatter>? inputFormatters;
+  final int? maxLength;
 
   const AppInput({
     super.key,
@@ -24,6 +27,8 @@ class AppInput extends StatefulWidget {
     this.validator,
     this.prefixIcon,
     this.maxLines = 1,
+    this.inputFormatters,
+    this.maxLength,
   });
 
   @override
@@ -58,6 +63,8 @@ class _AppInputState extends State<AppInput> {
             validator: widget.validator,
             enabled: widget.enabled,
             maxLines: widget.isPassword ? 1 : widget.maxLines,
+            maxLength: widget.maxLength,
+            inputFormatters: widget.inputFormatters,
             style: GoogleFonts.inter(color: AppColors.text, fontSize: 15),
             decoration: InputDecoration(
               hintText: widget.hint,
@@ -66,6 +73,7 @@ class _AppInputState extends State<AppInput> {
               fillColor: _focused
                   ? AppColors.primary.withOpacity(0.05)
                   : Colors.white.withOpacity(0.03),
+              counterText: '',
               contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

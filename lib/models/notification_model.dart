@@ -20,6 +20,8 @@ class NotificationModel {
   final NotifType type;
   final DateTime time;
   bool isRead;
+  final String? bidId;
+  final String? requestId;
 
   NotificationModel({
     required this.id,
@@ -28,5 +30,7 @@ class NotificationModel {
     required this.type,
     required this.time,
     this.isRead = false,
+    this.bidId,
+    this.requestId,
   });
 }

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/booking_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 
 class JobDetailScreen extends StatelessWidget {
@@ -27,7 +28,15 @@ class JobDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          final user = context.read<AuthProvider>().user;
+          if (user != null) await context.read<BookingProvider>().load(user.id, user.role);
+        },
+        color: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
@@ -108,18 +117,22 @@ class JobDetailScreen extends StatelessWidget {
                   Text('Customer', style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 10),
                   Row(children: [
-                    Container(
-                      width: 44, height: 44,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.1)),
-                      child: Center(child: Text(booking.customerName[0],
-                        style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 18))),
+                    GestureDetector(
+                      onTap: () => context.push('/customer/${booking.customerId}'),
+                      child: Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.1)),
+                        child: Center(child: Text(booking.customerName[0],
+                          style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 18))),
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                      Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12)),
-                    ]),
-                    const Spacer(),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ]),
+                    ),
                     GestureDetector(
                       onTap: () => context.push('/chat/${booking.id}'),
                       child: Container(
@@ -175,6 +188,7 @@ class JobDetailScreen extends StatelessWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+        ),
       ),
 
       bottomNavigationBar: _buildActions(context, booking),

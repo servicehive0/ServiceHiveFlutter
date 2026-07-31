@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/provider_model.dart';
 import '../../providers/provider_list_provider.dart';
+import '../../providers/services_provider.dart';
+import '../../services/ai_insights_service.dart';
 
 class SearchScreen extends StatefulWidget {
   final String? initialService;
@@ -18,16 +21,27 @@ class _SearchScreenState extends State<SearchScreen> {
   final _ctrl = TextEditingController();
   String _query = '';
   String? _selectedService;
-
-  static const _filters = [
-    'All', 'Electrical', 'Plumbing', 'AC Service',
-    'Painting', 'Cleaning', 'Repair', 'Carpentry', 'Gardening',
-  ];
+  // ML-predicted rating (Service-Hive-ML/train_rating.py — a real trained
+  // regression model, not an LLM) for providers with no real rating yet.
+  Map<String, dynamic> _predictedRatings = {};
+  bool _predictedForCurrentList = false;
 
   @override
   void initState() {
     super.initState();
     _selectedService = widget.initialService;
+  }
+
+  Future<void> _fetchPredictedRatings(List<ProviderModel> providers) async {
+    final unrated = providers.where((p) => p.rating <= 0).toList();
+    if (unrated.isEmpty) return;
+    final payload = unrated.map((p) => {
+      'provider_id': p.id,
+      'total_jobs': p.totalJobs,
+      'experience_years': double.tryParse(p.experience.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0,
+    }).toList();
+    final result = await AiInsightsService.predictProviderRatingML(payload);
+    if (mounted && result != null) setState(() => _predictedRatings = result);
   }
 
   @override
@@ -39,11 +53,39 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ProviderListProvider>();
-    List<ProviderModel> results = _query.isNotEmpty
-        ? prov.search(_query)
-        : (_selectedService != null && _selectedService != 'All')
-            ? prov.byService(_selectedService!)
-            : prov.providers;
+    final servicesProv = context.watch<ServicesProvider>();
+
+    if (!servicesProv.loaded && !servicesProv.loading) {
+      Future.microtask(() => servicesProv.fetch());
+    }
+
+    final filters = ['All', ...servicesProv.services.map((s) => s.name)];
+
+    List<ProviderModel> results;
+    if (_query.isNotEmpty) {
+      // A typed query like "AC" should find the "AC Technician" service
+      // category (and then that category's providers), not just literally
+      // substring-match a provider's own name/skills field — which is what
+      // this used to do exclusively, so searching a category term that
+      // isn't also literally present in some provider's profile came back
+      // empty even though the category itself exists.
+      final q = _query.toLowerCase();
+      final matchedService = servicesProv.services
+          .where((s) => s.name.toLowerCase().contains(q))
+          .toList();
+      results = matchedService.isNotEmpty
+          ? matchedService.expand((s) => prov.byService(s.name)).toSet().toList()
+          : prov.search(_query);
+    } else {
+      results = (_selectedService != null && _selectedService != 'All')
+          ? prov.byService(_selectedService!)
+          : prov.providers;
+    }
+
+    if (!_predictedForCurrentList && prov.providers.isNotEmpty) {
+      _predictedForCurrentList = true;
+      Future.microtask(() => _fetchPredictedRatings(prov.providers));
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -55,8 +97,24 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Find Providers',
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface2, borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text('Find Providers',
+                      style: GoogleFonts.inter(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  ],
+                ),
                 const SizedBox(height: 14),
                 // Search input
                 Container(
@@ -98,37 +156,39 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Filter chips
+                // Dynamic filter chips
                 SizedBox(
                   height: 34,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _filters.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final f = _filters[i];
-                      final active = (f == 'All' && (_selectedService == null || _selectedService == 'All'))
-                          || f == _selectedService;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedService = f == 'All' ? null : f),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.primary : AppColors.surface2,
-                            borderRadius: BorderRadius.circular(100),
-                            border: Border.all(color: active ? AppColors.primary : AppColors.border),
-                          ),
-                          child: Center(
-                            child: Text(f,
-                              style: GoogleFonts.inter(
-                                color: active ? Colors.white : AppColors.textMuted,
-                                fontSize: 12, fontWeight: FontWeight.w600)),
-                          ),
+                  child: servicesProv.loading
+                      ? const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: filters.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (_, i) {
+                            final f = filters[i];
+                            final active = (f == 'All' && (_selectedService == null || _selectedService == 'All'))
+                                || f == _selectedService;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedService = f == 'All' ? null : f),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                decoration: BoxDecoration(
+                                  color: active ? AppColors.primary : AppColors.surface2,
+                                  borderRadius: BorderRadius.circular(100),
+                                  border: Border.all(color: active ? AppColors.primary : AppColors.border),
+                                ),
+                                child: Center(
+                                  child: Text(f,
+                                    style: GoogleFonts.inter(
+                                      color: active ? Colors.white : AppColors.textMuted,
+                                      fontSize: 12, fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -136,23 +196,43 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // Results
           Expanded(
-            child: results.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await context.read<ProviderListProvider>().fetch();
+                if (!servicesProv.loaded) await servicesProv.fetch();
+              },
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
+              child: results.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        const Icon(Icons.search_off_rounded, color: AppColors.textDim, size: 48),
-                        const SizedBox(height: 12),
-                        Text('No providers found', style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14)),
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 80),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.search_off_rounded, color: AppColors.textDim, size: 48),
+                                const SizedBox(height: 12),
+                                Text('No providers found', style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14)),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                      itemCount: results.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) => _ProviderTile(
+                        provider: results[i],
+                        predictedRating: _predictedRatings[results[i].id] as num?,
+                      ),
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    itemCount: results.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _ProviderTile(provider: results[i]),
-                  ),
+            ),
           ),
         ],
       ),
@@ -162,7 +242,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
 class _ProviderTile extends StatelessWidget {
   final ProviderModel provider;
-  const _ProviderTile({required this.provider});
+  final num? predictedRating;
+  const _ProviderTile({required this.provider, this.predictedRating});
 
   @override
   Widget build(BuildContext context) {
@@ -184,11 +265,16 @@ class _ProviderTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+                    image: provider.avatarUrl != null
+                        ? DecorationImage(image: CachedNetworkImageProvider(provider.avatarUrl!), fit: BoxFit.cover)
+                        : null,
                   ),
-                  child: Center(
-                    child: Text(provider.name[0],
-                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
-                  ),
+                  child: provider.avatarUrl == null
+                      ? Center(
+                          child: Text(provider.name[0],
+                            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
+                        )
+                      : null,
                 ),
                 if (provider.isOnline)
                   Positioned(
@@ -209,21 +295,30 @@ class _ProviderTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(provider.name,
-                    style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 2),
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(provider.serviceType,
-                    style: GoogleFonts.inter(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                    style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: Color(0xFFFBBF24), size: 13),
-                      const SizedBox(width: 3),
-                      Text('${provider.rating} (${provider.reviewCount})',
-                        style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 11)),
-                      const SizedBox(width: 10),
-                      const Icon(Icons.location_on_rounded, color: AppColors.textDim, size: 11),
-                      const SizedBox(width: 2),
-                      Text(provider.area,
+                      if (provider.rating > 0) ...[
+                        const Icon(Icons.star_rounded, color: Color(0xFFFBBF24), size: 12),
+                        const SizedBox(width: 3),
+                        Text(provider.rating.toStringAsFixed(1),
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ] else if (predictedRating != null) ...[
+                        const Icon(Icons.star_outline_rounded, color: AppColors.textDim, size: 12),
+                        const SizedBox(width: 3),
+                        Text('~${predictedRating!.toStringAsFixed(1)}',
+                          style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 12, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 2),
+                        Text('(est.)',
+                          style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 10)),
+                      ],
+                      const SizedBox(width: 8),
+                      Text('${provider.totalJobs} jobs',
                         style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11)),
                     ],
                   ),
@@ -234,10 +329,12 @@ class _ProviderTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text('Rs ${provider.ratePerHour.toInt()}/hr',
-                  style: GoogleFonts.inter(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text('${provider.totalJobs} jobs',
-                  style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 10)),
+                  style: GoogleFonts.inter(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w700),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                if (provider.city.isNotEmpty)
+                  Text(provider.city,
+                    style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ],

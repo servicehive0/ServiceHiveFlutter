@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/booking_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/app_input.dart';
 
@@ -37,7 +38,15 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          final user = context.read<AuthProvider>().user;
+          if (user != null) await context.read<BookingProvider>().load(user.id, user.role);
+        },
+        color: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
@@ -74,17 +83,22 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   Text('Customer', style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 11, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 10),
                   Row(children: [
-                    Container(
-                      width: 50, height: 50,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.1), border: Border.all(color: AppColors.primary.withOpacity(0.2))),
-                      child: Center(child: Text(booking.customerName[0],
-                        style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 20))),
+                    GestureDetector(
+                      onTap: () => context.push('/customer/${booking.customerId}'),
+                      child: Container(
+                        width: 50, height: 50,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.1), border: Border.all(color: AppColors.primary.withOpacity(0.2))),
+                        child: Center(child: Text(booking.customerName[0],
+                          style: GoogleFonts.inter(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 20))),
+                      ),
                     ),
                     const SizedBox(width: 14),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-                      Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12)),
-                    ]),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(booking.customerName, style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(booking.customerPhone, style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ]),
+                    ),
                   ]),
                 ]),
               ),
@@ -187,6 +201,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+        ),
       ),
 
       bottomNavigationBar: alreadyHandled ? null : _buildActions(context, booking),
