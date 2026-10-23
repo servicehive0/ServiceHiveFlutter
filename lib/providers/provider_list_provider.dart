@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/provider_model.dart';
@@ -12,7 +14,7 @@ class ProviderListProvider extends ChangeNotifier {
   bool    _loading  = false;
   String? _lastError;
   RealtimeChannel? _profilesChannel;
-  RealtimeChannel? _requestsChannel;
+  Timer? _onlineTimer;
 
   bool              get isOnline  => _isOnline;
   bool              get loaded    => _loaded;
@@ -72,7 +74,9 @@ class ProviderListProvider extends ChangeNotifier {
       final data = await _sb
           .from('users')
           .select('id, name, phone, city, area, show_phone, show_email, provider_profiles(*)')
-          .eq('role', 'provider');
+          .eq('role', 'provider')
+          // providers waiting for the admin's approval are not shown to customers
+          .eq('is_verified', true);
 
       _providers = (data as List).map((e) => _rowToModel(e as Map<String, dynamic>)).toList();
       _loaded = true;
@@ -87,8 +91,14 @@ class ProviderListProvider extends ChangeNotifier {
     notifyListeners();
 
     _loadAvatars();
-    _refreshLiveStats();
     _subscribeToLiveUpdates();
+    _onlineTimer ??= Timer.periodic(const Duration(minutes: 1), (_) {
+      var changed = false;
+      for (final p in _providers) {
+        if (p.refreshOnline()) changed = true;
+      }
+      if (changed) notifyListeners();
+    });
   }
 
   Future<void> refresh() async {
@@ -110,45 +120,6 @@ class ProviderListProvider extends ChangeNotifier {
     }
   }
 
-  // rating/total_jobs/review_count on provider_profiles are legacy columns
-  // the bidding system never writes to (see provider_home_tab.dart's own
-  // comment on this) — compute them live from completed service_requests
-  // instead, same as the provider's own home tab, so every screen backed by
-  // this shared list (search, top providers, directory) shows real numbers
-  // instead of always-zero.
-  Future<void> _refreshLiveStats() async {
-    if (_providers.isEmpty) return;
-    try {
-      final ids = _providers.map((p) => p.id).toList();
-      final rows = await _sb
-          .from('service_requests')
-          .select('accepted_provider_id, rating, status')
-          .inFilter('accepted_provider_id', ids)
-          .eq('status', 'completed');
-
-      final byProvider = <String, List<Map<String, dynamic>>>{};
-      for (final r in (rows as List)) {
-        final row = r as Map<String, dynamic>;
-        final pid = row['accepted_provider_id'] as String?;
-        if (pid == null) continue;
-        (byProvider[pid] ??= []).add(row);
-      }
-
-      for (final p in _providers) {
-        final jobs = byProvider[p.id] ?? const [];
-        final rated = jobs.where((j) => j['rating'] != null).toList();
-        p.totalJobs = jobs.length;
-        p.reviewCount = rated.length;
-        p.rating = rated.isEmpty
-            ? 0.0
-            : rated.fold<double>(0, (sum, j) => sum + (j['rating'] as num).toDouble()) / rated.length;
-      }
-      notifyListeners();
-    } catch (e) {
-      debugPrint('ProviderListProvider._refreshLiveStats error: $e');
-    }
-  }
-
   // Keeps is_online and rating/jobs live while the app is open, instead of
   // only ever reflecting whatever was true the one time fetch() ran —
   // matches the realtime behavior the individual profile-view screens
@@ -164,20 +135,15 @@ class ProviderListProvider extends ChangeNotifier {
             final row = payload.newRecord;
             final idx = _providers.indexWhere((p) => p.id == row['id']);
             if (idx == -1) return;
-            final online = row['is_online'] as bool?;
-            if (online != null) _providers[idx].isOnline = online;
+            final p = _providers[idx];
+            p.switchedOn = row['is_online'] as bool? ?? p.switchedOn;
+            p.lastSeenAt = DateTime.tryParse(row['last_seen_at'] as String? ?? '') ?? p.lastSeenAt;
+            p.rating = (row['rating'] as num?)?.toDouble() ?? p.rating;
+            p.totalJobs = (row['total_jobs'] as num?)?.toInt() ?? p.totalJobs;
+            p.reviewCount = (row['review_count'] as num?)?.toInt() ?? p.reviewCount;
+            p.refreshOnline();
             notifyListeners();
           },
-        )
-        .subscribe();
-
-    _requestsChannel ??= _sb
-        .channel('provider_list_requests')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'service_requests',
-          callback: (_) => _refreshLiveStats(),
         )
         .subscribe();
   }
@@ -247,7 +213,7 @@ class ProviderListProvider extends ChangeNotifier {
   @override
   void dispose() {
     if (_profilesChannel != null) _sb.removeChannel(_profilesChannel!);
-    if (_requestsChannel != null) _sb.removeChannel(_requestsChannel!);
+    _onlineTimer?.cancel();
     super.dispose();
   }
 
@@ -291,7 +257,9 @@ class ProviderListProvider extends ChangeNotifier {
       rating:        (p['rating']        as num?)?.toDouble() ?? 0.0,
       totalJobs:     (p['total_jobs']    as num?)?.toInt()    ?? 0,
       totalEarnings: (p['total_earnings'] as num?)?.toDouble() ?? 0.0,
-      isOnline:      p['is_online']                      as bool?   ?? false,
+      isOnline:      ProviderModel.onlineNow(p['is_online'] as bool? ?? false, DateTime.tryParse(p['last_seen_at'] as String? ?? '')),
+      switchedOn:    p['is_online']                      as bool?   ?? false,
+      lastSeenAt:    DateTime.tryParse(p['last_seen_at'] as String? ?? ''),
       experience:    p['experience']                     as String? ?? '',
       about:         p['about']                          as String? ?? '',
       reviewCount:   (p['review_count']  as num?)?.toInt()    ?? 0,

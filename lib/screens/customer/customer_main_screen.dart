@@ -75,7 +75,7 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
@@ -117,7 +117,7 @@ class _BottomNav extends StatelessWidget {
                             boxShadow: active
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFF8B5CF6).withOpacity(0.55),
+                                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.55),
                                       blurRadius: 18,
                                       spreadRadius: 2,
                                       offset: const Offset(0, 4),
@@ -125,7 +125,7 @@ class _BottomNav extends StatelessWidget {
                                   ]
                                 : [
                                     BoxShadow(
-                                      color: const Color(0xFF8B5CF6).withOpacity(0.25),
+                                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
                                       blurRadius: 10,
                                       spreadRadius: 1,
                                     ),
@@ -160,7 +160,7 @@ class _BottomNav extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
                           color: active
-                              ? AppColors.primary.withOpacity(0.12)
+                              ? AppColors.primary.withValues(alpha: 0.12)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(100),
                         ),

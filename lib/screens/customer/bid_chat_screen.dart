@@ -71,10 +71,12 @@ class _BidChatScreenState extends State<BidChatScreen> {
       final customerId = req?['customer_id'] as String?;
       final otherId = providerId == myId ? customerId : providerId;
       if (otherId == null) return;
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _otherUserId = otherId;
         _otherIsProvider = otherId == providerId;
       });
+      }
 
       final url = await AvatarCache.getAvatar(otherId);
       if (mounted && url != null) {
@@ -320,7 +322,7 @@ class _BidChatScreenState extends State<BidChatScreen> {
           bottom: false,
           child: Container(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surface,
               border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
@@ -346,8 +348,8 @@ class _BidChatScreenState extends State<BidChatScreen> {
                 width: 40, height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.15),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   image: (_otherAvatarUrl != null)
                       ? DecorationImage(image: CachedNetworkImageProvider(_otherAvatarUrl!), fit: BoxFit.cover)
                       : null,
@@ -449,7 +451,7 @@ class _BidChatScreenState extends State<BidChatScreen> {
         if (_theyBlockedMe)
           Container(
             padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).viewInsets.bottom + 20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.border)),
             ),
@@ -463,7 +465,7 @@ class _BidChatScreenState extends State<BidChatScreen> {
         else
           Container(
             padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.border)),
             ),
@@ -517,7 +519,7 @@ class _BidChatScreenState extends State<BidChatScreen> {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)]),
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.3), blurRadius: 10)],
+                    boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.3), blurRadius: 10)],
                   ),
                   child: _sending
                       ? const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)))
@@ -551,7 +553,7 @@ class _MessageBubble extends StatelessWidget {
   void _openFullscreen(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.92),
+      barrierColor: Colors.black.withValues(alpha: 0.92),
       builder: (_) => GestureDetector(
         onTap: () => Navigator.pop(context),
         child: Scaffold(
@@ -583,7 +585,7 @@ class _MessageBubble extends StatelessWidget {
               width: 28, height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha: 0.15),
                 image: (avatarUrl != null)
                     ? DecorationImage(image: CachedNetworkImageProvider(avatarUrl!), fit: BoxFit.cover)
                     : null,
@@ -646,7 +648,7 @@ class _MessageBubble extends StatelessWidget {
                       ),
                       border: isMe ? null : Border.all(color: AppColors.border),
                       boxShadow: isMe
-                          ? [BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.2), blurRadius: 8)]
+                          ? [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.2), blurRadius: 8)]
                           : null,
                     ),
                     child: Text(text, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, height: 1.4)),

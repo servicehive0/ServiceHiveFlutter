@@ -221,7 +221,7 @@ class _JobCard extends StatelessWidget {
             ),
           ]),
           const SizedBox(height: 10),
-          Divider(color: AppColors.border, height: 1),
+          const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 10),
           Row(children: [
             const Icon(Icons.location_on_rounded, color: AppColors.textDim, size: 12),

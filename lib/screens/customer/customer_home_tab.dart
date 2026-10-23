@@ -90,7 +90,6 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final providerListProv = context.watch<ProviderListProvider>();
-    final providers = providerListProv.providers;
     final locationProv = context.watch<LocationProvider>();
     final bookings = context.watch<BookingProvider>();
     final servicesProv = context.watch<ServicesProvider>();
@@ -137,8 +136,8 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.primary.withOpacity(0.14),
-                    AppColors.bg.withOpacity(0),
+                    AppColors.primary.withValues(alpha: 0.14),
+                    AppColors.bg.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -153,7 +152,7 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                         begin: Alignment.topLeft, end: Alignment.bottomRight,
                       ),
                       boxShadow: [
-                        BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6)),
+                        BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6)),
                       ],
                       image: (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
                           ? DecorationImage(image: CachedNetworkImageProvider(user.avatarUrl!), fit: BoxFit.cover)
@@ -189,7 +188,7 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                         Container(
                           width: 46, height: 46,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(color: AppColors.border),
                           ),
@@ -228,14 +227,14 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
+                    color: Colors.white.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [
                       const SizedBox(width: 16),
-                      Icon(Icons.search_rounded, color: AppColors.primaryLight.withOpacity(0.8), size: 21),
+                      Icon(Icons.search_rounded, color: AppColors.primaryLight.withValues(alpha: 0.8), size: 21),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text('Search services or providers...',
@@ -246,7 +245,7 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                         margin: const EdgeInsets.all(6),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.tune_rounded, color: AppColors.primaryLight, size: 16),
@@ -277,7 +276,7 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: AppColors.border),
                 ),
@@ -341,10 +340,10 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft, end: Alignment.bottomRight,
-                            colors: [color.withOpacity(0.16), color.withOpacity(0.04)],
+                            colors: [color.withValues(alpha: 0.16), color.withValues(alpha: 0.04)],
                           ),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: color.withOpacity(0.25)),
+                          border: Border.all(color: color.withValues(alpha: 0.25)),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -354,8 +353,8 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                               width: 52, height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: color.withOpacity(0.16),
-                                border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+                                color: color.withValues(alpha: 0.16),
+                                border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
                               ),
                               clipBehavior: Clip.antiAlias,
                               child: (s.imgUrl != null && s.imgUrl!.isNotEmpty)
@@ -420,14 +419,14 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           width: 48, height: 48,
                           decoration: BoxDecoration(
-                            color: active.first.status.color.withOpacity(0.12),
+                            color: active.first.status.color.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(active.first.status.icon, color: active.first.status.color, size: 22),
@@ -447,7 +446,7 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: active.first.status.color.withOpacity(0.12),
+                            color: active.first.status.color.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(active.first.status.label,
@@ -474,7 +473,7 @@ class _CustomerHomeTabState extends State<CustomerHomeTab> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text('${myRequests.length}', style: GoogleFonts.inter(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
@@ -704,7 +703,7 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                       ),
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
-                        BoxShadow(color: slide.gradient.last.withOpacity(0.35), blurRadius: 24, offset: const Offset(0, 10)),
+                        BoxShadow(color: slide.gradient.last.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 10)),
                       ],
                     ),
                     child: Stack(
@@ -713,14 +712,14 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                           right: -24, top: -34,
                           child: Container(
                             width: 140, height: 140,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.07)),
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.07)),
                           ),
                         ),
                         Positioned(
                           right: 20, bottom: -50,
                           child: Container(
                             width: 100, height: 100,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.05)),
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.05)),
                           ),
                         ),
                         Row(
@@ -734,7 +733,7 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.18),
+                                      color: Colors.white.withValues(alpha: 0.18),
                                       borderRadius: BorderRadius.circular(100),
                                     ),
                                     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -749,7 +748,7 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                                     maxLines: 2, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 5),
                                   Text(slide.subtitle,
-                                    style: GoogleFonts.inter(color: Colors.white.withOpacity(0.82), fontSize: 11, height: 1.35, fontWeight: FontWeight.w500),
+                                    style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.82), fontSize: 11, height: 1.35, fontWeight: FontWeight.w500),
                                     maxLines: 2, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 11),
                                   Container(
@@ -757,7 +756,7 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(100),
-                                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 8, offset: const Offset(0, 3))],
+                                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 8, offset: const Offset(0, 3))],
                                     ),
                                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                                       Text(slide.buttonText, style: GoogleFonts.inter(color: slide.gradient.last, fontSize: 11.5, fontWeight: FontWeight.w800)),
@@ -773,8 +772,8 @@ class _PromoCarouselState extends State<_PromoCarousel> {
                               width: 50, height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.16),
-                                border: Border.all(color: Colors.white.withOpacity(0.28), width: 1.5),
+                                color: Colors.white.withValues(alpha: 0.16),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.28), width: 1.5),
                               ),
                               child: Icon(slide.icon, color: Colors.white, size: 23),
                             ),
@@ -892,15 +891,15 @@ class _ServiceRequestCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.05),
+          color: statusColor.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: statusColor.withOpacity(0.25)),
+          border: Border.all(color: statusColor.withValues(alpha: 0.25)),
         ),
         child: Row(children: [
           Container(
             width: 42, height: 42,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
+              color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(statusIcon, color: statusColor, size: 20),
@@ -915,7 +914,7 @@ class _ServiceRequestCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text(statusLabel, style: GoogleFonts.inter(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700)),

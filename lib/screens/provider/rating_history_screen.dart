@@ -52,7 +52,7 @@ class RatingHistoryScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFF78350F), Color(0xFF92400E)]),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.3)),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Overall Rating', style: GoogleFonts.inter(color: const Color(0xFFFCD34D), fontSize: 12)),
@@ -69,7 +69,7 @@ class RatingHistoryScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text('(${rated.length} ${rated.length == 1 ? 'review' : 'reviews'})',
-                        style: GoogleFonts.inter(color: Colors.white.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600)),
+                        style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.7), fontSize: 12, fontWeight: FontWeight.w600)),
                     ),
                   ]),
                 ]),

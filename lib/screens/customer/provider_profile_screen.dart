@@ -147,48 +147,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     }
     final url = await AvatarCache.getAvatar(widget.providerId);
     if (mounted && url != null) setState(() => _avatarUrl = url);
-    _refreshRatingAndJobs();
     _subscribeToJobUpdates();
-  }
-
-  // provider_profiles.rating/total_jobs are legacy columns the bidding
-  // system never writes to (see provider_home_tab.dart's own comment on
-  // this) — rating/jobs-done are computed live from completed
-  // service_requests instead, same as the provider's own home tab and
-  // React's ProviderDashboard.jsx, so this customer-facing view matches
-  // what the provider and admin actually see.
-  Future<void> _refreshRatingAndJobs() async {
-    try {
-      final rows = await Supabase.instance.client
-          .from('service_requests')
-          .select('rating, status')
-          .eq('accepted_provider_id', widget.providerId)
-          .eq('status', 'completed');
-      if (!mounted || _provider == null) return;
-      final completed = rows as List;
-      final rated = completed.where((r) => r['rating'] != null).toList();
-      final avgRating = rated.isEmpty
-          ? 0.0
-          : rated.fold<double>(0, (sum, r) => sum + (r['rating'] as num).toDouble()) / rated.length;
-      setState(() {
-        _provider = ProviderModel(
-          id: _provider!.id, name: _provider!.name, phone: _provider!.phone,
-          email: _provider!.email, city: _provider!.city, area: _provider!.area,
-          serviceType: _provider!.serviceType, serviceIcon: _provider!.serviceIcon,
-          skills: _provider!.skills,
-          rating: avgRating,
-          totalJobs: completed.length,
-          totalEarnings: _provider!.totalEarnings,
-          isOnline: _provider!.isOnline,
-          experience: _provider!.experience, about: _provider!.about,
-          reviewCount: rated.length,
-          ratePerHour: _provider!.ratePerHour,
-          showPhone: _provider!.showPhone, showEmail: _provider!.showEmail,
-        );
-      });
-    } catch (e) {
-      debugPrint('ProviderProfileScreen rating/jobs refresh error: $e');
-    }
   }
 
   // Keep listening while this screen stays open, so a job completing or a
@@ -200,13 +159,26 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
         .onPostgresChanges(
           event: PostgresChangeEvent.update,
           schema: 'public',
-          table: 'service_requests',
+          table: 'provider_profiles',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
-            column: 'accepted_provider_id',
+            column: 'id',
             value: widget.providerId,
           ),
-          callback: (_) => _refreshRatingAndJobs(),
+          // the database updates rating / jobs / online, show them at once
+          callback: (payload) {
+            final row = payload.newRecord;
+            if (!mounted || _provider == null) return;
+            setState(() {
+              _provider!
+                ..rating = (row['rating'] as num?)?.toDouble() ?? _provider!.rating
+                ..totalJobs = (row['total_jobs'] as num?)?.toInt() ?? _provider!.totalJobs
+                ..reviewCount = (row['review_count'] as num?)?.toInt() ?? _provider!.reviewCount
+                ..switchedOn = row['is_online'] as bool? ?? _provider!.switchedOn
+                ..lastSeenAt = DateTime.tryParse(row['last_seen_at'] as String? ?? '') ?? _provider!.lastSeenAt
+                ..refreshOnline();
+            });
+          },
         )
         .subscribe();
   }
@@ -214,9 +186,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.bg,
-        body: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+        body: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
       );
     }
 
@@ -375,9 +347,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: provider.isOnline ? AppColors.success.withOpacity(0.1) : AppColors.textDim.withOpacity(0.1),
+                        color: provider.isOnline ? AppColors.success.withValues(alpha: 0.1) : AppColors.textDim.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(100),
-                        border: Border.all(color: provider.isOnline ? AppColors.success.withOpacity(0.3) : AppColors.textDim.withOpacity(0.3)),
+                        border: Border.all(color: provider.isOnline ? AppColors.success.withValues(alpha: 0.3) : AppColors.textDim.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         provider.isOnline ? '● Available Now' : '○ Currently Offline',
@@ -435,9 +407,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
               children: provider.skills.map((s) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Text(s, style: GoogleFonts.inter(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
               )).toList(),

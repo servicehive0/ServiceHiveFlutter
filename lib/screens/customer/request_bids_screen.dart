@@ -124,11 +124,17 @@ class _RequestBidsScreenState extends State<RequestBidsScreen> {
   Future<void> _fetchBidScores(List<Bid> bids) async {
     try {
       final providerIds = bids.map((b) => b.providerId).toSet().toList();
-      final profiles = await Supabase.instance.client
-          .from('provider_profiles')
-          .select('id, rating, total_jobs, experience, latitude, longitude')
+      // the location is on the users row, rating/jobs on provider_profiles
+      final rows = await Supabase.instance.client
+          .from('users')
+          .select('id, latitude, longitude, provider_profiles(rating, total_jobs, experience)')
           .inFilter('id', providerIds);
-      final profileById = {for (final p in (profiles as List)) p['id'] as String: p};
+      final profileById = <String, Map<String, dynamic>>{};
+      for (final r in (rows as List)) {
+        final raw = r['provider_profiles'];
+        final pp = raw is List ? (raw.isNotEmpty ? raw.first as Map<String, dynamic> : <String, dynamic>{}) : (raw as Map<String, dynamic>? ?? {});
+        profileById[r['id'] as String] = {...pp, 'latitude': r['latitude'], 'longitude': r['longitude']};
+      }
 
       final payload = bids.map((b) {
         final p = profileById[b.providerId];

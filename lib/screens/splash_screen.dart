@@ -84,12 +84,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           Positioned(
             top: -100,
             left: -100,
-            child: _buildOrb(AppColors.primary.withOpacity(0.15), 350),
+            child: _buildOrb(AppColors.primary.withValues(alpha: 0.15), 350),
           ),
           Positioned(
             bottom: -100,
             right: -100,
-            child: _buildOrb(const Color(0xFF6366F1).withOpacity(0.1), 300),
+            child: _buildOrb(const Color(0xFF6366F1).withValues(alpha: 0.1), 300),
           ),
 
           // Floating particles — matching web ParticleField
@@ -115,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.primary.withOpacity(0.2 / _pulse.value),
+                                color: AppColors.primary.withValues(alpha: 0.2 / _pulse.value),
                                 width: 1.5,
                               ),
                             ),
@@ -133,7 +133,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.4),
+                                color: AppColors.primary.withValues(alpha: 0.4),
                                 blurRadius: 30,
                                 spreadRadius: 5,
                               ),

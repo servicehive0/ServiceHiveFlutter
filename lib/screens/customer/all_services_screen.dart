@@ -67,7 +67,7 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
                     child: Container(
                       width: 42, height: 42,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: AppColors.border),
                       ),
@@ -125,10 +125,10 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft, end: Alignment.bottomRight,
-                                    colors: [color.withOpacity(0.16), color.withOpacity(0.04)],
+                                    colors: [color.withValues(alpha: 0.16), color.withValues(alpha: 0.04)],
                                   ),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: color.withOpacity(0.25)),
+                                  border: Border.all(color: color.withValues(alpha: 0.25)),
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -138,8 +138,8 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
                                       width: 52, height: 52,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: color.withOpacity(0.16),
-                                        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+                                        color: color.withValues(alpha: 0.16),
+                                        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
                                       ),
                                       clipBehavior: Clip.antiAlias,
                                       child: (s.imgUrl != null && s.imgUrl!.isNotEmpty)

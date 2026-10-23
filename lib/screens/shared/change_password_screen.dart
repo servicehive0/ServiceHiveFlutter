@@ -145,9 +145,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.08),
+          color: AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
         ),
         child: Row(children: [
           const Icon(Icons.mail_outline_rounded, color: AppColors.primary, size: 18),
@@ -200,7 +200,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               textStyle: GoogleFonts.inter(
                   color: AppColors.primary, fontSize: pinBoxSize * 22 / 50, fontWeight: FontWeight.w900),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.03),
+                color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.border, width: 1.5),
               ),
@@ -210,10 +210,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               textStyle: GoogleFonts.inter(
                   color: AppColors.primary, fontSize: pinBoxSize * 22 / 50, fontWeight: FontWeight.w900),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.06),
+                color: AppColors.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.primary, width: 2),
-                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 10)],
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 10)],
               ),
             ),
             submittedPinTheme: PinTheme(
@@ -221,9 +221,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               textStyle: GoogleFonts.inter(
                   color: AppColors.primary, fontSize: pinBoxSize * 22 / 50, fontWeight: FontWeight.w900),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 1.5),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
               ),
             ),
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -301,9 +301,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             width: 90, height: 90,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               border: Border.all(
-                  color: AppColors.success.withOpacity(0.3), width: 2),
+                  color: AppColors.success.withValues(alpha: 0.3), width: 2),
             ),
             child: const Icon(Icons.check_circle_outline_rounded,
                 color: AppColors.success, size: 46),
@@ -334,9 +334,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     padding: const EdgeInsets.all(14),
     margin: const EdgeInsets.only(bottom: 20),
     decoration: BoxDecoration(
-      color: AppColors.error.withOpacity(0.08),
+      color: AppColors.error.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.error.withOpacity(0.25)),
+      border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
     ),
     child: Row(children: [
       const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),

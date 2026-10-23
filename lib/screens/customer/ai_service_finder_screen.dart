@@ -154,7 +154,7 @@ Respond ONLY with valid JSON — no explanation outside JSON:
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: const Color(0xFF3B82F6).withOpacity(0.35)),
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
                 ),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,7 +205,7 @@ Respond ONLY with valid JSON — no explanation outside JSON:
                             : [
                                 BoxShadow(
                                   color:
-                                      const Color(0xFF3B82F6).withOpacity(0.3),
+                                      const Color(0xFF3B82F6).withValues(alpha: 0.3),
                                   blurRadius: 14,
                                 )
                               ],
@@ -271,10 +271,10 @@ Respond ONLY with valid JSON — no explanation outside JSON:
                     ),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                        color: const Color(0xFF3B82F6).withOpacity(0.5)),
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.5)),
                     boxShadow: [
                       BoxShadow(
-                          color: const Color(0xFF3B82F6).withOpacity(0.12),
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
                           blurRadius: 24)
                     ],
                   ),
@@ -321,7 +321,7 @@ Respond ONLY with valid JSON — no explanation outside JSON:
                           borderRadius: BorderRadius.circular(100),
                           boxShadow: [
                             BoxShadow(
-                                color: const Color(0xFF6366F1).withOpacity(0.35),
+                                color: const Color(0xFF6366F1).withValues(alpha: 0.35),
                                 blurRadius: 14)
                           ],
                         ),

@@ -102,7 +102,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // Header
           Container(
             padding: const EdgeInsets.fromLTRB(24, 56, 24, 16),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surface,
               border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
@@ -190,7 +190,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // Input
           Container(
             padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 32),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.border)),
             ),
@@ -234,7 +234,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
-                      boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10)],
+                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10)],
                     ),
                     child: _sending
                         ? const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)))
@@ -266,7 +266,7 @@ class _MessageBubble extends StatelessWidget {
           if (!isMe) ...[
             Container(
               width: 28, height: 28,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.surface3,
               ),
@@ -294,7 +294,7 @@ class _MessageBubble extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${message.createdAt.hour}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                    style: GoogleFonts.inter(color: Colors.white.withOpacity(0.6), fontSize: 10),
+                    style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.6), fontSize: 10),
                   ),
                 ],
               ),

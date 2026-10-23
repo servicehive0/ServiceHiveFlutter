@@ -76,9 +76,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                 width: boxSize,
                 height: boxSize * 64 / 56,
                 textStyle: TextStyle(color: Colors.white, fontSize: boxSize * 24 / 56, fontWeight: FontWeight.w800),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.surface2,
-                  borderRadius: const BorderRadius.all(Radius.circular(14)),
+                  borderRadius: BorderRadius.all(Radius.circular(14)),
                   border: Border.fromBorderSide(BorderSide(color: AppColors.border, width: 1.5)),
                 ),
               );
@@ -119,7 +119,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           width: 90, height: 90,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.success.withOpacity(0.1),
+                            color: AppColors.success.withValues(alpha: 0.1),
                             border: Border.all(color: AppColors.success, width: 2),
                           ),
                           child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 50),
@@ -139,7 +139,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.4), blurRadius: 24, spreadRadius: 4)],
+                            boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.4), blurRadius: 24, spreadRadius: 4)],
                           ),
                           child: const Icon(Icons.shield_rounded, color: Colors.white, size: 38),
                         ),
@@ -163,7 +163,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                               border: Border.all(color: AppColors.error, width: 2),
                             ),
                           ),
-                          separatorBuilder: (_) => SizedBox(width: gap),
+                          separatorBuilder: (_) => const SizedBox(width: gap),
                           onCompleted: (_) => _verify(),
                           keyboardType: TextInputType.number,
                         ),
@@ -173,9 +173,9 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.08),
+                              color: AppColors.error.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                             ),
                             child: Row(children: [
                               const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
@@ -200,7 +200,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                               borderRadius: BorderRadius.circular(100),
                               boxShadow: _loading
                                   ? []
-                                  : [BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.3), blurRadius: 15)],
+                                  : [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.3), blurRadius: 15)],
                             ),
                             child: Center(
                               child: _loading

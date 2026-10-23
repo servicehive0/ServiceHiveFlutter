@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/error_helper.dart';
 import '../models/service_request_model.dart';
 import '../models/bid_model.dart';
-import '../services/notify_service.dart';
 
 const _kCloudName    = 'dbuhxbyq1';
 const _kUploadPreset = 'servicehive_unsigned';
@@ -106,10 +104,12 @@ class RequestProvider extends ChangeNotifier {
 
   Future<bool> submitRating(String requestId, double rating, String review) async {
     try {
-      await _db.from('service_requests').update({
-        'rating': rating,
-        'review': review,
-      }).eq('id', requestId);
+      // rate_job() also updates the booking and the provider's average rating
+      await _db.rpc('rate_job', params: {
+        'p_request_id': requestId,
+        'p_rating': rating,
+        'p_review': review,
+      });
 
       final idx = _myRequests.indexWhere((r) => r.id == requestId);
       if (idx != -1) {
@@ -180,34 +180,12 @@ class RequestProvider extends ChangeNotifier {
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,
         if (imageUrl != null) 'image_url': imageUrl,
+        if (targetProviderId != null) 'target_provider_id': targetProviderId,
         'status': 'open',
       });
 
-      // Fetch the just-created request's id so notifications can deep-link
-      // straight back to it when tapped.
-      String? newRequestId;
-      try {
-        final created = await _db.from('service_requests').select('id')
-            .eq('customer_id', customerId).eq('service_name', serviceName)
-            .order('created_at', ascending: false).limit(1).maybeSingle();
-        newRequestId = created?['id'] as String?;
-      } catch (_) {}
-
-      try {
-        if (targetProviderId != null) {
-          NotifyService.notify(targetProviderId, 'New request just for you',
-              '$customerName wants to book you directly for $serviceName', type: 'booking', requestId: newRequestId);
-        } else {
-          // Best-effort: notify online providers offering this service in the
-          // customer's city so they see the new request without polling.
-          final providers = await _db.from('provider_profiles')
-              .select('id').eq('service_type', serviceName).eq('is_online', true);
-          for (final p in (providers as List)) {
-            NotifyService.notify(p['id'] as String?, 'New service request nearby', '$serviceName needed in $area, $city', type: 'booking', requestId: newRequestId);
-          }
-        }
-      } catch (_) { /* non-critical */ }
-
+      // the database tells the right providers (the chosen one, or the
+      // approved providers of this service in the same city)
       await loadMyRequests(customerId);
       return true;
     } catch (e) {
@@ -229,7 +207,7 @@ class RequestProvider extends ChangeNotifier {
           .eq('customer_id', customerId)
           .order('created_at', ascending: false);
       _myRequests = data
-          .map((j) => ServiceRequest.fromJson(j as Map<String, dynamic>))
+          .map((j) => ServiceRequest.fromJson(j))
           .toList();
     } catch (e) {
       _error = friendlyError(e);
@@ -246,7 +224,7 @@ class RequestProvider extends ChangeNotifier {
           .select()
           .eq('id', requestId)
           .single();
-      return ServiceRequest.fromJson(data as Map<String, dynamic>);
+      return ServiceRequest.fromJson(data);
     } catch (_) {
       return null;
     }
@@ -286,7 +264,7 @@ class RequestProvider extends ChangeNotifier {
             value: requestId,
           ),
           callback: (payload) {
-            final bid = Bid.fromJson(payload.newRecord as Map<String, dynamic>);
+            final bid = Bid.fromJson(payload.newRecord);
             if (!_bidsOnRequest.any((b) => b.id == bid.id)) {
               _bidsOnRequest = [bid, ..._bidsOnRequest];
               notifyListeners();
@@ -321,61 +299,9 @@ class RequestProvider extends ChangeNotifier {
     required String customerId,
   }) async {
     try {
-      final otp = _generateOtp();
-
-      // Fetch request + bid data before any updates (for booking creation)
-      final reqData = await _db.from('service_requests').select().eq('id', requestId).maybeSingle();
-      final bidData = await _db.from('bids').select().eq('id', bidId).maybeSingle();
-
-      await _db.from('service_requests').update({
-        'status': 'accepted',
-        'accepted_bid_id': bidId,
-        'accepted_provider_id': providerId,
-        'otp_code': otp,
-      }).eq('id', requestId);
-
-      await _db.from('bids').update({'status': 'accepted'}).eq('id', bidId);
-      await _db
-          .from('bids')
-          .update({'status': 'rejected'})
-          .eq('request_id', requestId)
-          .neq('id', bidId);
-
-      // Create a booking record so it shows in both customer & provider booking lists
-      if (reqData != null && bidData != null) {
-        try {
-          final serviceName = reqData['service_name'] as String? ?? '';
-          String serviceIcon = 'Wrench';
-          try {
-            final svc = await _db
-                .from('services')
-                .select('icon')
-                .ilike('name', serviceName)
-                .maybeSingle();
-            if (svc != null && svc['icon'] != null) serviceIcon = svc['icon'] as String;
-          } catch (_) {}
-
-          await _db.from('bookings').insert({
-            'request_id':     requestId,
-            'user_id':        customerId,
-            'provider_id':    providerId,
-            'service':        serviceName,
-            'service_icon':   serviceIcon,
-            'address':        reqData['address'] ?? '',
-            'city':           reqData['city'] ?? '',
-            'notes':          reqData['description'] ?? '',
-            'scheduled_type': 'flexible',
-            'price':          bidData['price'] ?? 0,
-            'agreed_price':   bidData['price'] ?? 0,
-            'status':         'confirmed',
-          });
-        } catch (e) {
-          debugPrint('booking insert error (non-critical): $e');
-        }
-      }
-
-      NotifyService.notify(providerId, 'Your bid was accepted!',
-          "Your bid for ${reqData?['service_name'] ?? 'the'} request was accepted", type: 'booking', requestId: requestId, bidId: bidId);
+      // accept_bid() closes the request, makes the arrival code, rejects the
+      // other bids, creates the booking and tells the providers - on the server
+      await _db.rpc('accept_bid', params: {'p_bid_id': bidId});
 
       await loadMyRequests(customerId);
       await loadBidsForRequest(requestId);
@@ -393,22 +319,12 @@ class RequestProvider extends ChangeNotifier {
     required String customerId,
   }) async {
     try {
-      final data = await _db
-          .from('service_requests')
-          .select('otp_code, accepted_provider_id, service_name')
-          .eq('id', requestId)
-          .single();
-
-      final storedOtp = data['otp_code'] as String?;
-      if (storedOtp == null || storedOtp != enteredOtp.trim()) return false;
-
-      await _db.from('service_requests').update({
-        'status': 'in_progress',
-        'otp_verified': true,
-      }).eq('id', requestId);
-
-      NotifyService.notify(data['accepted_provider_id'] as String?, 'OTP verified',
-          "Customer confirmed you've arrived for the ${data['service_name']} job. You can start work now.", type: 'booking', requestId: requestId);
+      // the code is checked on the server: the customer can't read it
+      final ok = await _db.rpc('verify_job_otp', params: {
+        'p_request_id': requestId,
+        'p_code': enteredOtp.trim(),
+      }) as bool?;
+      if (ok != true) return false;
 
       await loadMyRequests(customerId);
       return true;
@@ -430,6 +346,16 @@ class RequestProvider extends ChangeNotifier {
           .single();
       return data['service_type'] as String?;
     } catch (_) {
+      return null;
+    }
+  }
+
+  // the arrival code is only given to the hired provider (get_job_otp)
+  Future<String?> fetchJobOtp(String requestId) async {
+    try {
+      return await _db.rpc('get_job_otp', params: {'p_request_id': requestId}) as String?;
+    } catch (e) {
+      debugPrint('fetchJobOtp error: $e');
       return null;
     }
   }
@@ -466,7 +392,7 @@ class RequestProvider extends ChangeNotifier {
           .order('created_at', ascending: false);
 
       _availableRequests = data
-          .map((j) => ServiceRequest.fromJson(j as Map<String, dynamic>))
+          .map((j) => ServiceRequest.fromJson(j))
           .toList();
     } catch (e) {
       _error = friendlyError(e);
@@ -491,14 +417,14 @@ class RequestProvider extends ChangeNotifier {
     }
 
     _availableReqChannel = _db
-        .channel('avail_req_${city}_${area}')
+        .channel('avail_req_${city}_$area')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'service_requests',
           callback: (payload) {
             final req = ServiceRequest.fromJson(
-                payload.newRecord as Map<String, dynamic>);
+                payload.newRecord);
             final serviceMatch =
                 req.serviceName.toLowerCase().contains(serviceType.toLowerCase());
             if (req.city == city &&
@@ -520,7 +446,7 @@ class RequestProvider extends ChangeNotifier {
           table: 'service_requests',
           callback: (payload) {
             final req = ServiceRequest.fromJson(
-                payload.newRecord as Map<String, dynamic>);
+                payload.newRecord);
             if (req.status != 'open') {
               final existed = _availableRequests.any((r) => r.id == req.id);
               if (existed) {
@@ -571,14 +497,7 @@ class RequestProvider extends ChangeNotifier {
         onConflict: 'request_id,provider_id',
       );
 
-      try {
-        final req = await _db.from('service_requests').select('customer_id, service_name').eq('id', requestId).maybeSingle();
-        if (req != null) {
-          NotifyService.notify(req['customer_id'] as String?, 'New bid received',
-              '$providerName bid Rs $price on your ${req['service_name']} request', type: 'booking', requestId: requestId);
-        }
-      } catch (_) { /* non-critical */ }
-
+      // the customer gets a notification from the database
       return true;
     } catch (e) {
       _error = friendlyError(e);
@@ -623,29 +542,9 @@ class RequestProvider extends ChangeNotifier {
 
   Future<bool> markJobComplete(String requestId) async {
     try {
-      await _db
-          .from('service_requests')
-          .update({'status': 'completed'})
-          .eq('id', requestId)
-          .eq('otp_verified', true);
-
-      // Sync the linked booking (if any) via the real request_id FK.
-      try {
-        await _db
-            .from('bookings')
-            .update({'status': 'completed'})
-            .eq('request_id', requestId)
-            .inFilter('status', ['confirmed', 'in_progress']);
-      } catch (_) {}
-
-      try {
-        final req = await _db.from('service_requests').select('customer_id, service_name').eq('id', requestId).maybeSingle();
-        if (req != null) {
-          NotifyService.notify(req['customer_id'] as String?, 'Job completed',
-              "Your ${req['service_name']} request has been marked complete. Rate your experience!", type: 'booking', requestId: requestId);
-        }
-      } catch (_) { /* non-critical */ }
-
+      // complete_job() checks the code was confirmed, closes the booking and
+      // tells the customer
+      await _db.rpc('complete_job', params: {'p_request_id': requestId});
       return true;
     } catch (e) {
       _error = friendlyError(e);
@@ -696,10 +595,9 @@ class RequestProvider extends ChangeNotifier {
         )
         .subscribe();
 
-    // Fallback poll: keeps the chat "live" even if Postgres Realtime
-    // replication isn't enabled for this table, without needing a manual
-    // refresh. Cheap since it only fetches rows newer than the last one.
-    _messagesPollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // realtime does the live part, this slow poll only catches a message
+    // missed while the socket was reconnecting
+    _messagesPollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _pollNewMessages(bidId);
     });
   }
@@ -798,9 +696,7 @@ class RequestProvider extends ChangeNotifier {
       _messages = _messages.map((m) => m.id == tempId ? real : m).toList();
       notifyListeners();
 
-      try {
-        NotifyService.notify(recipientId, 'New message from $senderName', message, type: 'chat', requestId: requestId, bidId: bidId);
-      } catch (_) { /* non-critical */ }
+      // the other person gets a notification from the database
 
       return true;
     } catch (e) {
@@ -812,11 +708,6 @@ class RequestProvider extends ChangeNotifier {
   }
 
   // ─────────────────────── Helpers ─────────────────────────────────────────
-
-  String _generateOtp() {
-    final rng = math.Random();
-    return List.generate(6, (_) => rng.nextInt(10)).join();
-  }
 
   void clearError() {
     _error = null;

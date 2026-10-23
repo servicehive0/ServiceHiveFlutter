@@ -153,8 +153,7 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   void _listenForChanges() {
-    if (_channel == null) {
-      _channel = _sb.channel('app_settings_live')
+    _channel ??= _sb.channel('app_settings_live')
           .onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
@@ -162,9 +161,7 @@ class AppSettingsProvider extends ChangeNotifier {
             callback: (_) => fetch(),
           )
           .subscribe();
-    }
-    if (_platformChannel == null) {
-      _platformChannel = _sb.channel('platform_settings_live')
+    _platformChannel ??= _sb.channel('platform_settings_live')
           .onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
@@ -172,7 +169,6 @@ class AppSettingsProvider extends ChangeNotifier {
             callback: (_) => fetchPlatformSettings(),
           )
           .subscribe();
-    }
   }
 
   @override

@@ -298,7 +298,15 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 
     setState(() => _threads = _threads.where((t) => t.bidId != thread.bidId).toList());
     try {
-      await _db.from('hidden_chats').upsert({'user_id': _myId, 'bid_id': thread.bidId});
+      // hidden_at must be sent again: on a second delete the old row would keep its
+      // old time, and every message after it would bring the chat back
+      final now = DateTime.now().toUtc();
+      _hiddenAt[thread.bidId] = now;
+      await _db.from('hidden_chats').upsert({
+        'user_id': _myId,
+        'bid_id': thread.bidId,
+        'hidden_at': now.toIso8601String(),
+      });
     } catch (_) {
       // Non-critical for the current session — worst case it reappears on next _load().
     }
@@ -559,7 +567,7 @@ class _ChatTile extends StatelessWidget {
                     width: 52, height: 52,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         begin: Alignment.topLeft, end: Alignment.bottomRight,
                         colors: [AppColors.primary, AppColors.primaryDark],
                       ),
@@ -652,8 +660,8 @@ class _ChatTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            Padding(
-              padding: const EdgeInsets.only(top: 14),
+            const Padding(
+              padding: EdgeInsets.only(top: 14),
               child: Icon(Icons.chevron_right_rounded, color: AppColors.textDim, size: 20),
             ),
           ],

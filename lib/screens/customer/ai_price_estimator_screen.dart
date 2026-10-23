@@ -135,7 +135,7 @@ class _AiPriceEstimatorScreenState extends State<AiPriceEstimatorScreen> {
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: const Color(0xFF10B981).withOpacity(0.3)),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3)),
                 ),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,10 +147,10 @@ class _AiPriceEstimatorScreenState extends State<AiPriceEstimatorScreen> {
                           horizontal: 10, vertical: 5),
                       margin: const EdgeInsets.only(bottom: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.1),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(100),
                         border: Border.all(
-                            color: const Color(0xFF10B981).withOpacity(0.3)),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.3)),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Icons.location_on_rounded,
@@ -239,7 +239,7 @@ class _AiPriceEstimatorScreenState extends State<AiPriceEstimatorScreen> {
                             : [
                                 BoxShadow(
                                     color: const Color(0xFF10B981)
-                                        .withOpacity(0.3),
+                                        .withValues(alpha: 0.3),
                                     blurRadius: 14)
                               ],
                       ),
@@ -305,10 +305,10 @@ class _AiPriceEstimatorScreenState extends State<AiPriceEstimatorScreen> {
                     ),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                        color: const Color(0xFF10B981).withOpacity(0.45)),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.45)),
                     boxShadow: [
                       BoxShadow(
-                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
                           blurRadius: 24)
                     ],
                   ),
@@ -362,7 +362,7 @@ class _AiPriceEstimatorScreenState extends State<AiPriceEstimatorScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.04),
+                        color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -425,9 +425,9 @@ class _PriceBox extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(children: [
           Text(label,

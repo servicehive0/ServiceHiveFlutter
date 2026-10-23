@@ -257,7 +257,9 @@ class AuthProvider extends ChangeNotifier {
       if (role != 'admin' && userRole != role && userRole != 'admin') {
         await _sb.auth.signOut();
         _set(AuthStatus.error,
-            error: 'This account is registered as "$userRole". Use the correct login portal.');
+            error: userRole == 'provider'
+                ? 'This is a service provider account. Please switch to Provider to log in.'
+                : 'This is a customer account. Please switch to Customer to log in.');
         return false;
       }
 
@@ -542,8 +544,7 @@ class AuthProvider extends ChangeNotifier {
             }
           }
           if (failedUploads.isNotEmpty) {
-            lastProviderProfileError = (lastProviderProfileError == null ? '' : '${lastProviderProfileError!}; ')
-                + 'KYC upload issue: ${failedUploads.join(', ')}';
+            lastProviderProfileError = '${lastProviderProfileError == null ? '' : '${lastProviderProfileError!}; '}KYC upload issue: ${failedUploads.join(', ')}';
           }
           _pendingProviderFiles = {};
         }

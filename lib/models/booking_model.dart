@@ -58,6 +58,10 @@ class BookingModel {
   final DateTime createdAt;
   final double? rating;
   final String? review;
+  // bookings made by accept_bid() belong to a service request: chat, cancel
+  // and rating then go through that request
+  final String? requestId;
+  final String? acceptedBidId;
 
   const BookingModel({
     required this.id,
@@ -80,6 +84,8 @@ class BookingModel {
     required this.createdAt,
     this.rating,
     this.review,
+    this.requestId,
+    this.acceptedBidId,
   });
 
   BookingModel copyWith({
@@ -110,6 +116,8 @@ class BookingModel {
       createdAt: createdAt,
       rating: rating ?? this.rating,
       review: review ?? this.review,
+      requestId: requestId,
+      acceptedBidId: acceptedBidId,
     );
   }
 }

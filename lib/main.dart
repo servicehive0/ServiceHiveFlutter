@@ -33,7 +33,7 @@ void main() async {
 
   await Supabase.initialize(
     url: kSupabaseUrl,
-    anonKey: kSupabaseAnonKey,
+    publishableKey: kSupabaseAnonKey,
   );
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

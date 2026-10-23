@@ -75,8 +75,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
               width: 80, height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFFBBF24).withOpacity(0.1),
-                border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.3), width: 2),
+                color: const Color(0xFFFBBF24).withValues(alpha: 0.1),
+                border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.3), width: 2),
               ),
               child: const Icon(Icons.star_rounded, color: Color(0xFFFBBF24), size: 40),
             ),

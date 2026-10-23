@@ -149,11 +149,11 @@ class AiAssistantScreen extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(
-                        color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
                         width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
                         blurRadius: 30,
                         offset: const Offset(0, 8),
                       ),
@@ -167,7 +167,7 @@ class AiAssistantScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFF8B5CF6).withOpacity(0.12),
+                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
                             width: 40,
                           ),
                         ),
@@ -177,7 +177,7 @@ class AiAssistantScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFF3B82F6).withOpacity(0.18),
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.18),
                             width: 18,
                           ),
                         ),
@@ -193,7 +193,7 @@ class AiAssistantScreen extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF8B5CF6).withOpacity(0.55),
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.55),
                               blurRadius: 32,
                               spreadRadius: 4,
                             ),
@@ -208,10 +208,10 @@ class AiAssistantScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.15),
+                            color: AppColors.success.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(100),
                             border: Border.all(
-                                color: AppColors.success.withOpacity(0.4)),
+                                color: AppColors.success.withValues(alpha: 0.4)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -245,7 +245,7 @@ class AiAssistantScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(100),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -352,12 +352,12 @@ class _FeatureCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: feature.isLive
-              ? feature.color.withOpacity(0.06)
+              ? feature.color.withValues(alpha: 0.06)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: feature.isLive
-                ? feature.color.withOpacity(0.3)
+                ? feature.color.withValues(alpha: 0.3)
                 : AppColors.border,
           ),
         ),
@@ -366,7 +366,7 @@ class _FeatureCard extends StatelessWidget {
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(
-                color: feature.color.withOpacity(0.12),
+                color: feature.color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Icon(feature.icon, color: feature.color, size: 22),
@@ -393,8 +393,8 @@ class _FeatureCard extends StatelessWidget {
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: feature.isLive
-                              ? AppColors.success.withOpacity(0.12)
-                              : feature.color.withOpacity(0.1),
+                              ? AppColors.success.withValues(alpha: 0.12)
+                              : feature.color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
@@ -426,7 +426,7 @@ class _FeatureCard extends StatelessWidget {
             if (feature.isLive) ...[
               const SizedBox(width: 8),
               Icon(Icons.arrow_forward_ios_rounded,
-                  color: feature.color.withOpacity(0.7), size: 14),
+                  color: feature.color.withValues(alpha: 0.7), size: 14),
             ],
           ],
         ),

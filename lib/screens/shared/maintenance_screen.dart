@@ -20,8 +20,8 @@ class MaintenanceScreen extends StatelessWidget {
       backgroundColor: AppColors.bg,
       body: Stack(
         children: [
-          Positioned(top: -100, left: -100, child: _orb(AppColors.primary.withOpacity(0.15), 350)),
-          Positioned(bottom: -100, right: -100, child: _orb(const Color(0xFF6366F1).withOpacity(0.1), 300)),
+          Positioned(top: -100, left: -100, child: _orb(AppColors.primary.withValues(alpha: 0.15), 350)),
+          Positioned(bottom: -100, right: -100, child: _orb(const Color(0xFF6366F1).withValues(alpha: 0.1), 300)),
           const Positioned.fill(child: FloatingParticles(count: 40)),
           Center(
             child: Padding(
@@ -39,7 +39,7 @@ class MaintenanceScreen extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 30, spreadRadius: 5)],
+                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 30, spreadRadius: 5)],
                     ),
                     child: const Icon(Icons.build_rounded, color: Colors.white, size: 40),
                   ),

@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/bid_model.dart';
 import '../models/booking_model.dart';
 import '../models/notification_model.dart';
-import '../services/notify_service.dart';
 
 class BookingProvider extends ChangeNotifier {
   static final _sb = Supabase.instance.client;
@@ -13,10 +12,9 @@ class BookingProvider extends ChangeNotifier {
   List<BidMessage>                _chatMessages  = [];
   RealtimeChannel?                _chatChannel;
   Timer?                          _chatPollTimer;
-  List<NotificationModel>         _notifications = [];
+  final List<NotificationModel>         _notifications = [];
   bool                            _loading       = false;
   String?                         _currentUserId;
-  String?                         _currentUserRole;
 
   // ─── Public getters ───────────────────────────────────────────────────────
 
@@ -63,12 +61,11 @@ class BookingProvider extends ChangeNotifier {
 
   Future<void> load(String userId, String role) async {
     _currentUserId   = userId;
-    _currentUserRole = role;
     _loading = true;
     notifyListeners();
 
     try {
-      final query = _sb.from('bookings').select('*, customer:user_id(name, phone), provider:provider_id(name, phone)');
+      final query = _sb.from('bookings').select('*, customer:user_id(name, phone), provider:provider_id(name, phone), request:request_id(accepted_bid_id)');
       final data  = role == 'provider'
           ? await query.eq('provider_id', userId).order('created_at', ascending: false)
           : await query.eq('user_id',     userId).order('created_at', ascending: false);
@@ -82,86 +79,24 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Create booking ───────────────────────────────────────────────────────
-
-  Future<BookingModel?> createBooking({
-    required String   providerId,
-    required String   providerName,
-    required String   providerPhone,
-    required String   serviceType,
-    required String   serviceIcon,
-    required String   address,
-    required String   city,
-    required String   description,
-    required DateTime scheduledDate,
-    required String   timeSlot,
-    required double   offeredPrice,
-  }) async {
-    final userId = _sb.auth.currentUser?.id ?? '';
-    if (userId.isEmpty) return null;
-
-    try {
-      final payload = {
-        'user_id':        userId,
-        'provider_id':    providerId,
-        'service':        serviceType,
-        'service_icon':   serviceIcon,
-        'address':        address,
-        'city':           city,
-        'notes':          description,
-        'scheduled_type': 'scheduled',
-        'scheduled_date': scheduledDate.toIso8601String().substring(0, 10),
-        'scheduled_time': timeSlot,
-        'price':          offeredPrice,
-        'status':         'pending',
-      };
-
-      final row     = await _sb.from('bookings').insert(payload).select().single();
-      final booking = _rowToModel(row as Map<String, dynamic>);
-
-      _bookings.insert(0, booking);
-      _addNotif(
-        'Booking Sent!',
-        'Your $serviceType request has been sent to $providerName.',
-        NotifType.booking,
-      );
-      notifyListeners();
-      return booking;
-    } catch (e) {
-      debugPrint('createBooking error: $e');
-      return null;
-    }
-  }
-
-  // ─── Status transitions ───────────────────────────────────────────────────
-
-  Future<void> acceptBooking(String id, {double? agreedPrice}) async {
-    await _updateStatus(id, BookingStatus.accepted, agreedPrice: agreedPrice);
-    final b = getById(id);
-    if (b != null) {
-      _addNotif('Booking Accepted', 'You accepted booking from ${b.customerName}.', NotifType.booking);
-    }
-  }
-
-  Future<void> rejectBooking(String id) async {
-    await _updateStatus(id, BookingStatus.rejected);
-    final b = getById(id);
-    if (b != null) {
-      _addNotif('Booking Rejected', 'You rejected booking from ${b.customerName}.', NotifType.booking);
-    }
-  }
-
-  Future<void> startJob(String id)    => _updateStatus(id, BookingStatus.inProgress);
-
-  Future<void> completeJob(String id) async {
-    await _updateStatus(id, BookingStatus.completed);
-    final b = getById(id);
-    if (b != null) {
-      _addNotif('Job Completed', '${b.serviceType} job marked as completed.', NotifType.booking);
-    }
-  }
+  // ─── Status changes ───────────────────────────────────────────────────────
 
   Future<void> cancelBooking(String id) async {
+    final b = getById(id);
+    if (b?.requestId != null) {
+      // cancel the whole job, not only this booking row
+      try {
+        await _sb.rpc('cancel_request', params: {'p_request_id': b!.requestId});
+        final idx = _bookings.indexWhere((x) => x.id == id);
+        if (idx != -1) {
+          _bookings[idx] = _bookings[idx].copyWith(status: BookingStatus.cancelled);
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('cancelBooking error: $e');
+      }
+      return;
+    }
     await _updateStatus(id, BookingStatus.cancelled);
     _addNotif('Booking Cancelled', 'Your booking has been cancelled.', NotifType.booking);
   }
@@ -170,7 +105,13 @@ class BookingProvider extends ChangeNotifier {
 
   Future<void> submitReview(String id, double rating, String review) async {
     try {
-      await _sb.from('bookings').update({'rating': rating, 'review': review}).eq('id', id);
+      final b = getById(id);
+      if (b?.requestId != null) {
+        // rate_job() rates the request + booking and updates the provider's rating
+        await _sb.rpc('rate_job', params: {'p_request_id': b!.requestId, 'p_rating': rating, 'p_review': review});
+      } else {
+        await _sb.from('bookings').update({'rating': rating, 'review': review}).eq('id', id);
+      }
       final idx = _bookings.indexWhere((b) => b.id == id);
       if (idx != -1) {
         _bookings[idx] = _bookings[idx].copyWith(rating: rating, review: review);
@@ -223,10 +164,9 @@ class BookingProvider extends ChangeNotifier {
         )
         .subscribe();
 
-    // Fallback poll: keeps the chat "live" even if Postgres Realtime
-    // replication isn't enabled/drops silently — mirrors RequestProvider's
-    // bid-chat safety net, which booking-chat previously had none of.
-    _chatPollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // realtime does the live part, this slow poll only catches a message
+    // missed while the socket was reconnecting
+    _chatPollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _pollNewChatMessages(bookingId);
     });
   }
@@ -288,18 +228,7 @@ class BookingProvider extends ChangeNotifier {
       _chatMessages = _chatMessages.map((m) => m.id == tempId ? real : m).toList();
       notifyListeners();
 
-      // Booking-chat previously never notified the recipient at all (unlike
-      // bid-chat's RequestProvider.sendMessage) — this closes that gap.
-      try {
-        final booking = getById(bookingId);
-        if (booking != null) {
-          final isCustomer = booking.customerId == senderId;
-          final recipientId = isCustomer ? booking.providerId : booking.customerId;
-          final senderName = isCustomer ? booking.customerName : booking.providerName;
-          NotifyService.notify(recipientId, 'New message from $senderName', text, type: 'chat');
-        }
-      } catch (_) { /* non-critical */ }
-
+      // the other person gets a notification from the database
       return true;
     } catch (e) {
       debugPrint('sendMessage error: $e');
@@ -372,6 +301,8 @@ class BookingProvider extends ChangeNotifier {
       createdAt:     DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
       rating:        (r['rating']      as num?)?.toDouble(),
       review:        r['review']       as String?,
+      requestId:     r['request_id']   as String?,
+      acceptedBidId: (r['request'] as Map<String, dynamic>?)?['accepted_bid_id'] as String?,
     );
   }
 

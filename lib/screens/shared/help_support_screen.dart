@@ -89,9 +89,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               const Icon(Icons.headset_mic_outlined, color: AppColors.primary, size: 22),
@@ -123,7 +123,7 @@ class _FaqTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: expanded ? AppColors.primary.withOpacity(0.35) : AppColors.border),
+        border: Border.all(color: expanded ? AppColors.primary.withValues(alpha: 0.35) : AppColors.border),
       ),
       child: Column(children: [
         InkWell(

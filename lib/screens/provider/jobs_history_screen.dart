@@ -50,7 +50,7 @@ class JobsHistoryScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFF1E3A8A), Color(0xFF1D4ED8)]),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Total Jobs Completed', style: GoogleFonts.inter(color: AppColors.primaryLight, fontSize: 12)),
@@ -122,7 +122,7 @@ class _JobTile extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 40, height: 40,
-          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
           child: const Icon(Icons.verified_rounded, color: AppColors.primary, size: 20),
         ),
         const SizedBox(width: 12),

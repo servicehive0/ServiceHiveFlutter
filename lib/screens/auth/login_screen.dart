@@ -127,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   late Animation<Offset> _cardSlide;
 
   late AnimationController _stepCtrl;
-  late Animation<Offset> _stepSlide;
 
   @override
   void initState() {
@@ -138,7 +137,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _cardCtrl.forward();
 
     _stepCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
-    _stepSlide = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(_stepCtrl);
   }
 
   @override
@@ -268,10 +266,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         children: [
           Positioned(top: -100, left: -100,
             child: Container(width: 350, height: 350,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.12)))),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withValues(alpha: 0.12)))),
           Positioned(bottom: -80, right: -80,
             child: Container(width: 280, height: 280,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF6366F1).withOpacity(0.08)))),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF6366F1).withValues(alpha: 0.08)))),
           const Positioned.fill(child: FloatingParticles()),
 
           SafeArea(
@@ -284,9 +282,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
+                      color: AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.success.withOpacity(0.35)),
+                      border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
                     ),
                     child: Row(children: [
                       const Icon(Icons.verified_rounded, color: AppColors.success, size: 20),
@@ -357,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 color: AppColors.surface,
                                 borderRadius: BorderRadius.circular(28),
                                 border: Border.all(color: AppColors.border),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 40, offset: const Offset(0, 20))],
+                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 40, offset: const Offset(0, 20))],
                               ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -392,7 +390,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               color: AppColors.surface,
                               borderRadius: BorderRadius.circular(28),
                               border: Border.all(color: AppColors.border),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 40, offset: const Offset(0, 20))],
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 40, offset: const Offset(0, 20))],
                             ),
                             child: Column(
                               children: [
@@ -710,7 +708,7 @@ class _StepIndicator extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               color: done ? AppColors.primary : AppColors.surface2,
-              boxShadow: isCurrent ? [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 8)] : null,
+              boxShadow: isCurrent ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 8)] : null,
             ),
           ),
         );
@@ -743,7 +741,7 @@ class _UploadTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: done ? AppColors.primary : AppColors.border),
-              color: Colors.white.withOpacity(0.02),
+              color: Colors.white.withValues(alpha: 0.02),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -798,7 +796,7 @@ class _LocationDropdown extends StatelessWidget {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(enabled ? 0.04 : 0.02),
+            color: Colors.white.withValues(alpha: enabled ? 0.04 : 0.02),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),

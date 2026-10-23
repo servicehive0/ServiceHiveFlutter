@@ -60,11 +60,11 @@ class _SliderToggle extends StatelessWidget {
       width: width,
       height: 54,
       decoration: BoxDecoration(
-        color: const Color(0xFF141414).withOpacity(0.95),
+        color: const Color(0xFF141414).withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20),
         ],
       ),
       child: Padding(
@@ -90,7 +90,7 @@ class _SliderToggle extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(96),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 12),
+                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 12),
                     ],
                   ),
                 ),

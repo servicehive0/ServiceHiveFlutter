@@ -69,8 +69,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.primary.withOpacity(0.12),
-                    AppColors.bg.withOpacity(0),
+                    AppColors.primary.withValues(alpha: 0.12),
+                    AppColors.bg.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -96,7 +96,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
                           width: 42, height: 42,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                             border: Border.all(color: AppColors.border),
                           ),
                           child: const Icon(Icons.calendar_month_rounded, color: AppColors.primaryLight, size: 19),
@@ -108,7 +108,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
                   Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppColors.border),
                     ),
@@ -118,7 +118,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
                         gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
-                          BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 3)),
+                          BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 3)),
                         ],
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
@@ -182,9 +182,9 @@ class _RequestList extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft, end: Alignment.bottomRight,
-                          colors: [AppColors.primary.withOpacity(0.16), AppColors.primary.withOpacity(0.04)],
+                          colors: [AppColors.primary.withValues(alpha: 0.16), AppColors.primary.withValues(alpha: 0.04)],
                         ),
-                        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                       ),
                       child: Icon(emptyIcon, color: AppColors.primaryLight, size: 34),
                     ),
@@ -261,7 +261,7 @@ class _RequestCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.025),
+          color: Colors.white.withValues(alpha: 0.025),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.border),
         ),
@@ -275,10 +275,10 @@ class _RequestCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      colors: [statusColor.withOpacity(0.22), statusColor.withOpacity(0.06)],
+                      colors: [statusColor.withValues(alpha: 0.22), statusColor.withValues(alpha: 0.06)],
                     ),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
                   child: Icon(_statusIcon, color: statusColor, size: 21),
                 ),
@@ -301,7 +301,7 @@ class _RequestCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
+                    color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(_statusLabel,
@@ -338,16 +338,16 @@ class _RequestCard extends StatelessWidget {
                     width: double.infinity, height: 40,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.warning.withOpacity(0.16), AppColors.warning.withOpacity(0.06)],
+                        colors: [AppColors.warning.withValues(alpha: 0.16), AppColors.warning.withValues(alpha: 0.06)],
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                     ),
                     child: Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.star_rounded, color: AppColors.warning, size: 15),
+                          const Icon(Icons.star_rounded, color: AppColors.warning, size: 15),
                           const SizedBox(width: 6),
                           Text('Rate this service',
                             style: GoogleFonts.inter(color: AppColors.warning, fontSize: 12.5, fontWeight: FontWeight.w800)),
@@ -366,7 +366,7 @@ class _RequestCard extends StatelessWidget {
   void _openRatingDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.75),
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (_) => RatingDialog(requestId: request.id),
     );
   }

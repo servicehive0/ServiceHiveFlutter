@@ -17,14 +17,11 @@ import 'screens/customer/ai_price_estimator_screen.dart';
 import 'screens/customer/ai_scheduling_screen.dart';
 import 'screens/customer/ai_provider_match_screen.dart';
 import 'screens/customer/provider_profile_screen.dart';
-import 'screens/customer/book_service_screen.dart';
 import 'screens/customer/booking_detail_screen.dart';
 import 'screens/customer/chat_screen.dart';
 import 'screens/customer/review_screen.dart';
 import 'screens/customer/search_screen.dart';
 import 'screens/provider/provider_main_screen.dart';
-import 'screens/provider/request_detail_screen.dart';
-import 'screens/provider/job_detail_screen.dart';
 import 'screens/provider/service_request_detail_screen.dart';
 import 'screens/provider/provider_job_screen.dart';
 import 'screens/customer/create_request_screen.dart';
@@ -121,10 +118,6 @@ GoRouter createRouter(AuthProvider authProvider, AppSettingsProvider settingsPro
         builder: (_, state) => CustomerProfileScreen(customerId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: '/book/:providerId',
-        builder: (_, state) => BookServiceScreen(providerId: state.pathParameters['providerId']!),
-      ),
-      GoRoute(
         path: '/booking/:id',
         builder: (_, state) => BookingDetailScreen(bookingId: state.pathParameters['id']!),
       ),
@@ -144,14 +137,6 @@ GoRouter createRouter(AuthProvider authProvider, AppSettingsProvider settingsPro
           final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
           return ProviderMainScreen(initialTab: tab);
         },
-      ),
-      GoRoute(
-        path: '/provider/request/:id',
-        builder: (_, state) => RequestDetailScreen(bookingId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/provider/job/:id',
-        builder: (_, state) => JobDetailScreen(bookingId: state.pathParameters['id']!),
       ),
 
       // ── New Bidding System — Customer ─────────────────────────

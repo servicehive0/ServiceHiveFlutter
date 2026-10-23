@@ -65,7 +65,7 @@ class _OrbState extends State<_Orb> with SingleTickerProviderStateMixin {
           height: 350,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: widget.color.withOpacity(0.15),
+            color: widget.color.withValues(alpha: 0.15),
           ),
           child: BackdropFilter(
             filter: _blurFilter,
@@ -78,6 +78,6 @@ class _OrbState extends State<_Orb> with SingleTickerProviderStateMixin {
 
   static final _blurFilter = _buildBlur();
   static _buildBlur() {
-    return ColorFilter.mode(Colors.transparent, BlendMode.clear);
+    return const ColorFilter.mode(Colors.transparent, BlendMode.clear);
   }
 }

@@ -21,6 +21,7 @@ class ProviderJobScreen extends StatefulWidget {
 class _ProviderJobScreenState extends State<ProviderJobScreen> {
   ServiceRequest? _request;
   bool _loading = true;
+  String? _otpCode;
   bool _completing = false;
   String? _customerAvatarUrl;
 
@@ -31,8 +32,12 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
   }
 
   Future<void> _load() async {
-    final req = await context.read<RequestProvider>().fetchRequest(widget.requestId);
-    if (mounted) setState(() { _request = req; _loading = false; });
+    final rp = context.read<RequestProvider>();
+    final req = await rp.fetchRequest(widget.requestId);
+    final otp = (req != null && req.status == 'accepted' && !req.otpVerified)
+        ? await rp.fetchJobOtp(widget.requestId)
+        : null;
+    if (mounted) setState(() { _request = req; _otpCode = otp; _loading = false; });
     if (req != null) _loadCustomerAvatar(req.customerId);
   }
 
@@ -169,7 +174,7 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
         ),
 
         // OTP card (shown to provider)
-        if (!isCompleted && (isAccepted || isInProgress) && req.otpCode != null)
+        if (!isCompleted && (isAccepted || isInProgress) && _otpCode != null)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -200,7 +205,7 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                   // margins overflowed on smaller phones; size dynamically.
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final digits = req.otpCode!.split('');
+                      final digits = _otpCode!.split('');
                       const hMargin = 5.0;
                       final boxSize = ((constraints.maxWidth - hMargin * 2 * digits.length) / digits.length)
                           .clamp(32.0, 44.0);
@@ -222,7 +227,7 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                   const SizedBox(height: 14),
                   GestureDetector(
                     onTap: () {
-                      Clipboard.setData(ClipboardData(text: req.otpCode!));
+                      Clipboard.setData(ClipboardData(text: _otpCode!));
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text('OTP copied!', style: GoogleFonts.inter(color: Colors.white)),
                         backgroundColor: AppColors.success,

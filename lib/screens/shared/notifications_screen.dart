@@ -155,14 +155,14 @@ class _NotifTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: notif.isRead ? AppColors.surface : AppColors.primary.withOpacity(0.05),
+        color: notif.isRead ? AppColors.surface : AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: notif.isRead ? AppColors.border : AppColors.primary.withOpacity(0.15)),
+        border: Border.all(color: notif.isRead ? AppColors.border : AppColors.primary.withValues(alpha: 0.15)),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           width: 40, height: 40,
-          decoration: BoxDecoration(color: _color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: _color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
           child: Icon(notif.type.icon, color: _color, size: 18),
         ),
         const SizedBox(width: 12),

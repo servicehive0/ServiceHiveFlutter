@@ -38,6 +38,7 @@ class _ProviderHomeTabState extends State<ProviderHomeTab> {
   Future<void> _init() async {
     final user = context.read<AuthProvider>().user;
     if (user == null) { setState(() => _initDone = true); return; }
+    final requests = context.read<RequestProvider>();
 
     try {
       final profileData = await Supabase.instance.client
@@ -46,8 +47,8 @@ class _ProviderHomeTabState extends State<ProviderHomeTab> {
           .eq('id', user.id)
           .maybeSingle();
 
-      final jobs = await context.read<RequestProvider>().fetchProviderActiveJobs(user.id);
-      if (mounted) await context.read<RequestProvider>().loadMyProviderJobs(user.id, silent: true);
+      final jobs = await requests.fetchProviderActiveJobs(user.id);
+      if (mounted) await requests.loadMyProviderJobs(user.id, silent: true);
 
       if (mounted) setState(() { _profile = profileData; _activeJobs = jobs; _initDone = true; });
     } catch (_) {
@@ -362,9 +363,9 @@ class _ProviderHomeTabState extends State<ProviderHomeTab> {
                 )),
               )
             else if (_activeJobs.isEmpty)
-              SliverToBoxAdapter(
+              const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.symmetric(horizontal: 24),
                   child: _EmptyCard(icon: Icons.work_outline_rounded, message: 'No active jobs yet'),
                 ),
               )

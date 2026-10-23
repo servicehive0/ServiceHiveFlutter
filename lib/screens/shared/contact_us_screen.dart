@@ -112,7 +112,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.75),
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 28),
@@ -130,8 +130,8 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 width: 84, height: 84,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.success.withOpacity(0.1),
-                  border: Border.all(color: AppColors.success.withOpacity(0.3), width: 2),
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3), width: 2),
                 ),
                 child: const Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 44),
               ),
@@ -203,9 +203,9 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               const Icon(Icons.headset_mic_outlined, color: AppColors.primary, size: 22),
@@ -284,7 +284,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _selectedType == type ? AppColors.primary.withOpacity(0.15) : AppColors.surface,
+                  color: _selectedType == type ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surface,
                   borderRadius: BorderRadius.circular(100),
                   border: Border.all(color: _selectedType == type ? AppColors.primary : AppColors.border),
                 ),

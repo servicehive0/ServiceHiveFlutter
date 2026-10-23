@@ -58,19 +58,19 @@ class EarningsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFF064E3B), Color(0xFF065F46)]),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Total Lifetime Earnings', style: GoogleFonts.inter(color: AppColors.success.withOpacity(0.8), fontSize: 12)),
+                  Text('Total Lifetime Earnings', style: GoogleFonts.inter(color: AppColors.success.withValues(alpha: 0.8), fontSize: 12)),
                   const SizedBox(height: 8),
                   Text('Rs ${total.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
                     style: GoogleFonts.inter(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 20),
                   Row(children: [
                     _EarnStat(label: 'This Month', value: 'Rs ${thisMonth.toInt()}', color: const Color(0xFF34D399)),
-                    Container(width: 1, height: 32, color: Colors.white.withOpacity(0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
+                    Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
                     _EarnStat(label: 'Jobs Done', value: '${completed.length}', color: const Color(0xFF34D399)),
-                    Container(width: 1, height: 32, color: Colors.white.withOpacity(0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
+                    Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.1), margin: const EdgeInsets.symmetric(horizontal: 20)),
                     _EarnStat(label: 'Rating', value: rating > 0 ? '${rating.toStringAsFixed(1)} ★' : '—', color: const Color(0xFFFBBF24)),
                   ]),
                 ]),
@@ -129,7 +129,7 @@ class _EarnStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(value, style: GoogleFonts.inter(color: color, fontSize: 15, fontWeight: FontWeight.w800)),
-    Text(label, style: GoogleFonts.inter(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+    Text(label, style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.5), fontSize: 10)),
   ]);
 }
 
@@ -150,7 +150,7 @@ class _TransactionTile extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 40, height: 40,
-          decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
           child: const Icon(Icons.payments_outlined, color: AppColors.success, size: 20),
         ),
         const SizedBox(width: 12),

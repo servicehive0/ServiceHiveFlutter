@@ -47,15 +47,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         return;
       }
 
-      final posted = await db
-          .from('service_requests')
-          .count(CountOption.exact)
-          .eq('customer_id', widget.customerId);
-      final completed = await db
-          .from('service_requests')
-          .count(CountOption.exact)
-          .eq('customer_id', widget.customerId)
-          .eq('status', 'completed');
+      // the counts come from the same function: a provider can't read all
+      // requests of a customer, only the ones he bid on
+      final posted = (row['requests_posted'] as num?)?.toInt() ?? 0;
+      final completed = (row['jobs_completed'] as num?)?.toInt() ?? 0;
 
       if (mounted) {
         setState(() {
@@ -82,9 +77,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.bg,
-        body: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+        body: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
       );
     }
 
@@ -187,9 +182,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                         ),
                         child: Text('Customer',
                           style: GoogleFonts.inter(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),

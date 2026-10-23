@@ -305,7 +305,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ? DecorationImage(image: CachedNetworkImageProvider(user!.avatarUrl!), fit: BoxFit.cover)
                           : null,
                       boxShadow: [BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4), blurRadius: 20)],
+                          color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20)],
                     ),
                     child: user?.avatarUrl == null
                         ? Center(
@@ -660,9 +660,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,9 +676,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: _skills.map((s) => Container(
                 padding: const EdgeInsets.only(left: 12, right: 6, top: 6, bottom: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
+                  color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -687,7 +687,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: () => _removeSkill(s),
-                      child: Icon(Icons.close_rounded, size: 16, color: AppColors.primary.withOpacity(0.8)),
+                      child: Icon(Icons.close_rounded, size: 16, color: AppColors.primary.withValues(alpha: 0.8)),
                     ),
                   ],
                 ),

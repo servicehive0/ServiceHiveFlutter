@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
@@ -20,13 +23,48 @@ class ProviderMainScreen extends StatefulWidget {
   State<ProviderMainScreen> createState() => _ProviderMainScreenState();
 }
 
-class _ProviderMainScreenState extends State<ProviderMainScreen> {
+class _ProviderMainScreenState extends State<ProviderMainScreen> with WidgetsBindingObserver {
   late int _tab;
+  Timer? _heartbeat;
+
+  // "Online" for customers = switched on AND the app pinged in the last 3
+  // minutes, so a closed app no longer shows as online
+  void _startHeartbeat() {
+    _heartbeat?.cancel();
+    _ping();
+    _heartbeat = Timer.periodic(const Duration(minutes: 1), (_) => _ping());
+  }
+
+  Future<void> _ping() async {
+    try {
+      await Supabase.instance.client.rpc('ping');
+    } catch (_) {
+      // no internet: the next ping tries again
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startHeartbeat();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _heartbeat?.cancel();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _heartbeat?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     _tab = widget.initialTab;
+    WidgetsBinding.instance.addObserver(this);
+    _startHeartbeat();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
       final userId = auth.user?.id ?? '';
@@ -73,7 +111,7 @@ class _ProviderMainScreenState extends State<ProviderMainScreen> {
       backgroundColor: AppColors.bg,
       body: IndexedStack(index: _tab, children: screens),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
@@ -95,7 +133,7 @@ class _ProviderMainScreenState extends State<ProviderMainScreen> {
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: active ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+                            color: active ? AppColors.primary.withValues(alpha: 0.12) : Colors.transparent,
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Icon(_items[i].icon,

@@ -155,11 +155,11 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           Positioned(top: -100, left: -100,
             child: Container(width: 300, height: 300,
               decoration: BoxDecoration(shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.07)))),
+                color: AppColors.primary.withValues(alpha: 0.07)))),
           Positioned(bottom: -80, right: -80,
             child: Container(width: 250, height: 250,
               decoration: BoxDecoration(shape: BoxShape.circle,
-                color: const Color(0xFF6366F1).withOpacity(0.06)))),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.06)))),
 
           SafeArea(
             child: LayoutBuilder(
@@ -218,9 +218,9 @@ class _PendingBody extends StatelessWidget {
               width: 100, height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFF59E0B).withOpacity(0.1),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.25), width: 2),
-                boxShadow: [BoxShadow(color: const Color(0xFFF59E0B).withOpacity(0.15), blurRadius: 30, spreadRadius: 5)],
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.25), width: 2),
+                boxShadow: [BoxShadow(color: const Color(0xFFF59E0B).withValues(alpha: 0.15), blurRadius: 30, spreadRadius: 5)],
               ),
               child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFF59E0B), size: 48),
             ),
@@ -247,12 +247,12 @@ class _PendingBody extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.border),
           ),
-          child: Column(children: [
+          child: const Column(children: [
             _StatusRow(icon: Icons.check_circle_rounded, color: AppColors.success, label: 'Email OTP Verified'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _StatusRow(icon: Icons.check_circle_rounded, color: AppColors.success, label: 'Registration Complete'),
-            const SizedBox(height: 12),
-            _StatusRow(icon: Icons.radio_button_unchecked_rounded, color: const Color(0xFFF59E0B),
+            SizedBox(height: 12),
+            _StatusRow(icon: Icons.radio_button_unchecked_rounded, color: Color(0xFFF59E0B),
               label: 'Waiting for Admin Approval', isWaiting: true),
           ]),
         ),
@@ -301,9 +301,9 @@ class _RejectedBody extends StatelessWidget {
           width: 100, height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.error.withOpacity(0.1),
-            border: Border.all(color: AppColors.error.withOpacity(0.25), width: 2),
-            boxShadow: [BoxShadow(color: AppColors.error.withOpacity(0.15), blurRadius: 30, spreadRadius: 5)],
+            color: AppColors.error.withValues(alpha: 0.1),
+            border: Border.all(color: AppColors.error.withValues(alpha: 0.25), width: 2),
+            boxShadow: [BoxShadow(color: AppColors.error.withValues(alpha: 0.15), blurRadius: 30, spreadRadius: 5)],
           ),
           child: const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
         ),
@@ -324,9 +324,9 @@ class _RejectedBody extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.08),
+              color: AppColors.error.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.error.withOpacity(0.25)),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('REASON', style: GoogleFonts.inter(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
@@ -346,7 +346,7 @@ class _RejectedBody extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
               borderRadius: BorderRadius.circular(100),
-              boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 20)],
+              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 20)],
             ),
             child: Center(
               child: Text('BACK TO REGISTER',
@@ -379,9 +379,9 @@ class _ApprovedBody extends StatelessWidget {
             width: 110, height: 110,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.success.withOpacity(0.12),
-              border: Border.all(color: AppColors.success.withOpacity(0.35), width: 2),
-              boxShadow: [BoxShadow(color: AppColors.success.withOpacity(0.25), blurRadius: 40, spreadRadius: 8)],
+              color: AppColors.success.withValues(alpha: 0.12),
+              border: Border.all(color: AppColors.success.withValues(alpha: 0.35), width: 2),
+              boxShadow: [BoxShadow(color: AppColors.success.withValues(alpha: 0.25), blurRadius: 40, spreadRadius: 8)],
             ),
             child: const Icon(Icons.verified_rounded, color: AppColors.success, size: 52),
           ),
@@ -413,7 +413,7 @@ class _ApprovedBody extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
               borderRadius: BorderRadius.circular(100),
-              boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 20)],
+              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 20)],
             ),
             child: Center(
               child: Text('BACK TO LOGIN',

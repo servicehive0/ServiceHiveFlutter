@@ -572,7 +572,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                     color: AppColors.surface2,
                     borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                        color: const Color(0xFF8B5CF6).withOpacity(0.3)),
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
                   ),
                   child: Text(s,
                       style: GoogleFonts.inter(
@@ -595,7 +595,7 @@ class _AiChatScreenState extends State<AiChatScreen>
           color: AppColors.surface2,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: const Color(0xFF8B5CF6).withOpacity(0.4)),
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
@@ -666,7 +666,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                       ? null
                       : [
                           BoxShadow(
-                            color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           )
@@ -724,7 +724,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                       ? null
                       : [
                           BoxShadow(
-                            color: const Color(0xFF3B82F6).withOpacity(0.3),
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           )
@@ -810,7 +810,7 @@ class _Bubble extends StatelessWidget {
                             : Border.all(color: AppColors.border),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -908,7 +908,7 @@ class _Bubble extends StatelessWidget {
                 border: Border.all(color: AppColors.border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -975,16 +975,16 @@ class _SheetOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.07),
+            color: color.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withOpacity(0.2)),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
           child: Row(
             children: [
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 22),
@@ -1005,7 +1005,7 @@ class _SheetOption extends StatelessWidget {
               ),
               const Spacer(),
               Icon(Icons.arrow_forward_ios_rounded,
-                  color: color.withOpacity(0.5), size: 14),
+                  color: color.withValues(alpha: 0.5), size: 14),
             ],
           ),
         ),

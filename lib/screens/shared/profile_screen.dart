@@ -135,12 +135,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary.withOpacity(0.15), AppColors.surface],
+                    colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.surface],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -156,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             image: user?.avatarUrl != null
                                 ? DecorationImage(image: CachedNetworkImageProvider(user!.avatarUrl!), fit: BoxFit.cover)
                                 : null,
-                            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 20)],
+                            boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20)],
                           ),
                           child: user?.avatarUrl == null
                               ? Center(
@@ -202,16 +202,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             maxLines: 1, overflow: TextOverflow.ellipsis),
                           if (user != null && user.phone.isNotEmpty) ...[
                             const SizedBox(height: 2),
-                            Text(user!.phone, style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 12)),
+                            Text(user.phone, style: GoogleFonts.inter(color: AppColors.textDim, fontSize: 12)),
                           ],
                           const SizedBox(height: 8),
                           Wrap(spacing: 6, runSpacing: 6, children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.12),
+                                color: AppColors.primary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(100),
-                                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                               ),
                               child: Text(isProvider ? 'Service Provider' : 'Customer',
                                 style: GoogleFonts.inter(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
@@ -220,9 +220,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.success.withOpacity(0.12),
+                                  color: AppColors.success.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(100),
-                                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                                 ),
                                 child: Text(_specialization!,
                                   style: GoogleFonts.inter(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w700)),
@@ -231,9 +231,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFBBF24).withOpacity(0.12),
+                                  color: const Color(0xFFFBBF24).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(100),
-                                  border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.3)),
+                                  border: Border.all(color: const Color(0xFFFBBF24).withValues(alpha: 0.3)),
                                 ),
                                 child: Text('Rs $_rateHr/hr',
                                   style: GoogleFonts.inter(color: const Color(0xFFFBBF24), fontSize: 10, fontWeight: FontWeight.w700)),
@@ -308,9 +308,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
+                    color: AppColors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.error.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
                   ),
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
@@ -368,7 +368,7 @@ class _MenuItem extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 38, height: 38,
-          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: AppColors.primary, size: 19),
         ),
         const SizedBox(width: 14),

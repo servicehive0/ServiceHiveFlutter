@@ -190,9 +190,9 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Text('OPEN', style: GoogleFonts.inter(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w800)),
               ),
@@ -216,7 +216,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(req.serviceName, style: GoogleFonts.inter(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),
@@ -376,7 +376,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
 
   Widget get _buildActions => Container(
     padding: const EdgeInsets.fromLTRB(24, 12, 24, 36),
-    decoration: BoxDecoration(
+    decoration: const BoxDecoration(
       color: AppColors.surface,
       border: Border(top: BorderSide(color: AppColors.border)),
     ),
@@ -391,7 +391,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
                 : const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)]),
             color: _submitting ? AppColors.surface2 : null,
             borderRadius: BorderRadius.circular(100),
-            boxShadow: _submitting ? [] : [BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.3), blurRadius: 15)],
+            boxShadow: _submitting ? [] : [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.3), blurRadius: 15)],
           ),
           child: Center(
             child: _submitting
@@ -433,7 +433,7 @@ class _ServiceRequestDetailScreenState extends State<ServiceRequestDetailScreen>
   );
 
   @override
-  Widget build(BuildContext _context) {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: _loading

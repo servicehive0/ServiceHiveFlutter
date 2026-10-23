@@ -104,7 +104,7 @@ class _ParticlePainter extends CustomPainter {
     for (final p in particles) {
       p.update(size);
       _paint
-        ..color = p.color.withOpacity(p.alpha)
+        ..color = p.color.withValues(alpha: p.alpha)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, p.radius * 1.6);
       canvas.drawCircle(Offset(p.x, p.y), p.radius, _paint);
     }

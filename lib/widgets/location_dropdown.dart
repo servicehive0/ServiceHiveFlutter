@@ -44,12 +44,12 @@ class LocationDropdown extends StatelessWidget {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(enabled ? 0.04 : 0.02),
+            color: Colors.white.withValues(alpha: enabled ? 0.04 : 0.02),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: safeValue != null
                   ? AppColors.primary
-                  : Colors.white.withOpacity(0.08),
+                  : Colors.white.withValues(alpha: 0.08),
             ),
           ),
           child: DropdownButtonHideUnderline(

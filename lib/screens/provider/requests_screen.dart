@@ -175,7 +175,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                   : _profileError != null
                   ? _ErrorState(message: _profileError!)
                   : _serviceType == null
-                  ? _ErrorState(message: 'Set your specialization in your profile to start receiving matching requests.')
+                  ? const _ErrorState(message: 'Set your specialization in your profile to start receiving matching requests.')
                   : RefreshIndicator(
                       onRefresh: _refresh,
                       color: AppColors.primary,

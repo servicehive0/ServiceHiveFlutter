@@ -8,15 +8,17 @@ class ProviderModel {
   final String serviceType;
   final String serviceIcon;
   final List<String> skills;
-  // Mutable — rating/totalJobs/reviewCount are recomputed live from
-  // completed service_requests (see ProviderListProvider._refreshLiveStats)
-  // and isOnline/avatarUrl update live via realtime, so list screens (search,
-  // top providers, directory) can update in place instead of everyone
-  // rebuilding a whole new ProviderModel just to reflect one changed field.
+  // Mutable — rating/totalJobs/reviewCount (kept by the database) and the
+  // online state update live via realtime, so list screens (search, top
+  // providers, directory) can update in place.
   double rating;
   int totalJobs;
   final double totalEarnings;
   bool isOnline;
+  // isOnline = the provider switched "available" on AND his app pinged in
+  // the last 3 minutes (a closed app is not online any more)
+  bool switchedOn;
+  DateTime? lastSeenAt;
   final String experience;
   final String about;
   int reviewCount;
@@ -46,5 +48,20 @@ class ProviderModel {
     this.showPhone = true,
     this.showEmail = true,
     this.avatarUrl,
+    this.switchedOn = false,
+    this.lastSeenAt,
   });
+
+  static bool onlineNow(bool switchedOn, DateTime? lastSeenAt) =>
+      switchedOn &&
+      lastSeenAt != null &&
+      DateTime.now().toUtc().difference(lastSeenAt.toUtc()) < const Duration(minutes: 3);
+
+  // called again every minute, so somebody who closed the app goes offline
+  bool refreshOnline() {
+    final now = onlineNow(switchedOn, lastSeenAt);
+    final changed = now != isOnline;
+    isOnline = now;
+    return changed;
+  }
 }

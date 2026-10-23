@@ -71,17 +71,17 @@ class _AppInputState extends State<AppInput> {
               hintStyle: GoogleFonts.inter(color: AppColors.textDim, fontSize: 15),
               filled: true,
               fillColor: _focused
-                  ? AppColors.primary.withOpacity(0.05)
-                  : Colors.white.withOpacity(0.03),
+                  ? AppColors.primary.withValues(alpha: 0.05)
+                  : Colors.white.withValues(alpha: 0.03),
               counterText: '',
               contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

@@ -59,16 +59,16 @@ class BookingDetailScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: booking.status.color.withOpacity(0.08),
+                  color: booking.status.color.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: booking.status.color.withOpacity(0.25)),
+                  border: Border.all(color: booking.status.color.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       width: 52, height: 52,
                       decoration: BoxDecoration(
-                        color: booking.status.color.withOpacity(0.15),
+                        color: booking.status.color.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(booking.status.icon, color: booking.status.color, size: 26),
@@ -149,12 +149,15 @@ class BookingDetailScreen extends StatelessWidget {
     if (isCustomer) {
       return Container(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        decoration: BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.border))),
+        decoration: const BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.border))),
         child: Row(
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: () => context.push('/chat/${booking.id}'),
+                // a job from a request uses the same chat as the bid, so both people see it
+                onTap: () => context.push(booking.requestId != null && booking.acceptedBidId != null
+                    ? '/service-request/${booking.requestId}/chat/${booking.acceptedBidId}'
+                    : '/chat/${booking.id}'),
                 child: Container(
                   height: 50,
                   decoration: BoxDecoration(
@@ -185,9 +188,9 @@ class BookingDetailScreen extends StatelessWidget {
                   child: Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                     ),
                     child: Center(child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.error, fontWeight: FontWeight.w700))),
                   ),
